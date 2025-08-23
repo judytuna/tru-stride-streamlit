@@ -78,15 +78,36 @@ def authenticate_user(username, password):
         conn.close()
         return user_id, bool(is_admin)
     
-    # If user doesn't exist, create new regular user (for MVP simplicity)
-    # In production, you'd want registration to be explicit
-    else:
+    conn.close()
+    return None, False
+
+def create_user(username, email, password):
+    """
+    Create a new user account
+    """
+    conn = sqlite3.connect('horse_gait.db')
+    c = conn.cursor()
+    
+    # Check if username already exists
+    c.execute("SELECT id FROM users WHERE username = ?", (username,))
+    if c.fetchone():
+        conn.close()
+        return None, "Username already exists"
+    
+    # Hash the password
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    
+    try:
+        # Create new user
         c.execute("INSERT INTO users (username, email, created_at, is_admin, password_hash) VALUES (?, ?, ?, ?, ?)",
-                 (username, f"{username}@example.com", datetime.now(), 0, password_hash))
+                 (username, email, datetime.now(), 0, password_hash))
         conn.commit()
         user_id = c.lastrowid
         conn.close()
-        return user_id, False
+        return user_id, None
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None, "Username already exists"
 
 def save_analysis(user_id, filename, analysis_results):
     conn = sqlite3.connect('horse_gait.db')
@@ -301,22 +322,54 @@ def main():
     
     # Authentication
     if 'user_id' not in st.session_state:
-        st.sidebar.header("🔐 Login")
-        username = st.sidebar.text_input("Username")
-        password = st.sidebar.text_input("Password", type="password")
+        st.sidebar.header("🔐 Authentication")
         
-        if st.sidebar.button("Login"):
-            if username and password:
-                user_id, is_admin = authenticate_user(username, password)
-                st.session_state.user_id = user_id
-                st.session_state.username = username
-                st.session_state.is_admin = is_admin
-                st.rerun()
-            else:
-                st.sidebar.error("Please enter username and password")
+        # Toggle between login and signup
+        auth_mode = st.sidebar.radio("Choose action:", ["Login", "Sign Up Here"])
+        
+        if auth_mode == "Login":
+            st.sidebar.subheader("Login")
+            username = st.sidebar.text_input("Username", key="login_username")
+            password = st.sidebar.text_input("Password", type="password", key="login_password")
+            
+            if st.sidebar.button("Login"):
+                if username and password:
+                    user_id, is_admin = authenticate_user(username, password)
+                    if user_id:
+                        st.session_state.user_id = user_id
+                        st.session_state.username = username
+                        st.session_state.is_admin = is_admin
+                        st.rerun()
+                    else:
+                        st.sidebar.error("Invalid username or password")
+                else:
+                    st.sidebar.error("Please enter username and password")
+        
+        else:  # Sign Up
+            st.sidebar.subheader("Sign Up Here")
+            new_username = st.sidebar.text_input("Choose Username", key="signup_username")
+            new_email = st.sidebar.text_input("Email Address", key="signup_email")
+            new_password = st.sidebar.text_input("Choose Password", type="password", key="signup_password")
+            confirm_password = st.sidebar.text_input("Confirm Password", type="password", key="confirm_password")
+            
+            if st.sidebar.button("Sign Up"):
+                if new_username and new_email and new_password and confirm_password:
+                    if new_password != confirm_password:
+                        st.sidebar.error("Passwords do not match")
+                    elif "@" not in new_email or "." not in new_email:
+                        st.sidebar.error("Please enter a valid email address")
+                    else:
+                        user_id, error = create_user(new_username, new_email, new_password)
+                        if user_id:
+                            st.sidebar.success("Account created successfully! Please login.")
+                            st.rerun()
+                        else:
+                            st.sidebar.error(error)
+                else:
+                    st.sidebar.error("Please fill in all fields")
         
         # Show admin setup info on first run
-        st.info("👆 Please login in the sidebar to continue")
+        st.info("👆 Please login or sign up in the sidebar to continue")
         
         # Temporary database reset option (remove after first use)
         if st.checkbox("🗑️ Reset Database (Admin Only - Deletes All Data)", value=False):
