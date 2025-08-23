@@ -8,42 +8,58 @@ import hashlib
 import tempfile
 import os
 import json
+import re
 
 # Database setup
 def init_db():
     conn = sqlite3.connect('horse_gait.db')
     c = conn.cursor()
     
-    # Users table
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY, username TEXT UNIQUE, email TEXT, created_at TIMESTAMP)''')
+    # Check if users table exists and get its schema
+    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+    table_exists = c.fetchone()
     
-    # Videos table
+    if table_exists:
+        # Table exists, check if it needs migration
+        c.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in c.fetchall()]
+        
+        # Migration: Add missing columns
+        if 'is_admin' not in columns:
+            st.info("🔄 Migrating database: Adding admin features...")
+            c.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0")
+            
+        if 'password_hash' not in columns:
+            c.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
+            # Set default passwords for existing users
+            default_hash = hashlib.sha256("defaultpass123".encode()).hexdigest()
+            c.execute("UPDATE users SET password_hash = ? WHERE password_hash IS NULL", (default_hash,))
+            st.info("🔑 Updated existing users with default password: 'defaultpass123'")
+    
+    else:
+        # Create fresh tables with full schema
+        c.execute('''CREATE TABLE IF NOT EXISTS users
+                     (id INTEGER PRIMARY KEY, username TEXT UNIQUE, email TEXT, 
+                      created_at TIMESTAMP, is_admin BOOLEAN DEFAULT 0, 
+                      password_hash TEXT)''')
+    
+    # Videos table (unchanged)
     c.execute('''CREATE TABLE IF NOT EXISTS videos
                  (id INTEGER PRIMARY KEY, user_id INTEGER, filename TEXT, 
                   upload_date TIMESTAMP, analysis_results TEXT,
                   FOREIGN KEY (user_id) REFERENCES users (id))''')
     
-    conn.commit()
-    conn.close()
-
-def get_all_users():
-    conn = sqlite3.connect('horse_gait.db')
-    users = pd.read_sql_query('''
-        SELECT u.id, u.username, u.email, u.created_at, u.is_admin,
-               COUNT(v.id) as video_count
-        FROM users u
-        LEFT JOIN videos v ON u.id = v.user_id
-        GROUP BY u.id, u.username, u.email, u.created_at, u.is_admin
-        ORDER BY u.created_at DESC
-    ''', conn)
-    conn.close()
-    return users
-
-def toggle_admin_status(user_id, make_admin):
-    conn = sqlite3.connect('horse_gait.db')
-    c = conn.cursor()
-    c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (1 if make_admin else 0, user_id))
+    # Create default admin user if doesn't exist
+    admin_username = os.getenv("ADMIN_USERNAME", "admin")
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+    
+    c.execute("SELECT id FROM users WHERE username = ?", (admin_username,))
+    if not c.fetchone():
+        password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
+        c.execute("INSERT INTO users (username, email, created_at, is_admin, password_hash) VALUES (?, ?, ?, ?, ?)",
+                 (admin_username, f"{admin_username}@horseanalyzer.com", datetime.now(), 1, password_hash))
+        st.success(f"✅ Created admin user: {admin_username}")
+    
     conn.commit()
     conn.close()
 
@@ -74,36 +90,6 @@ def get_user_stats():
     
     conn.close()
     return total_users, total_videos, videos_per_user, upload_trends
-
-def init_db():
-    conn = sqlite3.connect('horse_gait.db')
-    c = conn.cursor()
-    
-    # Users table with admin role
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY, username TEXT UNIQUE, email TEXT, 
-                  created_at TIMESTAMP, is_admin BOOLEAN DEFAULT 0, 
-                  password_hash TEXT)''')
-    
-    # Videos table
-    c.execute('''CREATE TABLE IF NOT EXISTS videos
-                 (id INTEGER PRIMARY KEY, user_id INTEGER, filename TEXT, 
-                  upload_date TIMESTAMP, analysis_results TEXT,
-                  FOREIGN KEY (user_id) REFERENCES users (id))''')
-    
-    # Create default admin user if doesn't exist
-    admin_username = os.getenv("ADMIN_USERNAME", "admin")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")  # Change this!
-    
-    c.execute("SELECT id FROM users WHERE username = ?", (admin_username,))
-    if not c.fetchone():
-        password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
-        c.execute("INSERT INTO users (username, email, created_at, is_admin, password_hash) VALUES (?, ?, ?, ?, ?)",
-                 (admin_username, f"{admin_username}@horseanalyzer.com", datetime.now(), 1, password_hash))
-        print(f"✅ Created admin user: {admin_username}")
-    
-    conn.commit()
-    conn.close()
 
 def authenticate_user(username, password):
     """
@@ -154,6 +140,26 @@ def get_user_videos(user_id):
     conn.close()
     return videos
 
+def get_all_users():
+    conn = sqlite3.connect('horse_gait.db')
+    users = pd.read_sql_query('''
+        SELECT u.id, u.username, u.email, u.created_at, u.is_admin,
+               COUNT(v.id) as video_count
+        FROM users u
+        LEFT JOIN videos v ON u.id = v.user_id
+        GROUP BY u.id, u.username, u.email, u.created_at, u.is_admin
+        ORDER BY u.created_at DESC
+    ''', conn)
+    conn.close()
+    return users
+
+def toggle_admin_status(user_id, make_admin):
+    conn = sqlite3.connect('horse_gait.db')
+    c = conn.cursor()
+    c.execute("UPDATE users SET is_admin = ? WHERE id = ?", (1 if make_admin else 0, user_id))
+    conn.commit()
+    conn.close()
+
 def analyze_gait(video_file):
     """
     Call your HuggingFace Gradio app for gait analysis
@@ -165,9 +171,6 @@ def analyze_gait(video_file):
         client = Client("judytuna/tru-stride-analyzer")
         
         # Save uploaded file temporarily
-        import tempfile
-        import os
-        
         with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
             tmp_file.write(video_file.read())
             tmp_file_path = tmp_file.name
@@ -187,13 +190,10 @@ def analyze_gait(video_file):
         if isinstance(result, tuple):
             # If your Gradio returns multiple outputs
             analysis_text = result[0] if result else "No analysis available"
-            confidence = 0.85  # Extract from your actual results
         else:
             analysis_text = str(result)
-            confidence = 0.85
         
         # Parse your actual results into structured format
-        # This is where you'll extract the real analysis from your model
         analysis = parse_gradio_results(analysis_text)
         
         return analysis
@@ -225,8 +225,6 @@ def parse_gradio_results(analysis_text):
     - Body Length Variation: 0.749
     """
     try:
-        import re
-        
         # Initialize defaults
         analysis = {
             "primary_gait": "Unknown",
@@ -352,6 +350,15 @@ def main():
         
         # Show admin setup info on first run
         st.info("👆 Please login in the sidebar to continue")
+        
+        # Temporary database reset option (remove after first use)
+        if st.checkbox("🗑️ Reset Database (Admin Only - Deletes All Data)", value=False):
+            if st.button("⚠️ CONFIRM: Delete All Data and Reset Database"):
+                if os.path.exists('horse_gait.db'):
+                    os.remove('horse_gait.db')
+                    st.error("🗑️ Database deleted! Refresh the page to create a fresh database.")
+                    st.stop()
+        
         st.markdown("""
         ### 🚀 First Time Setup:
         **Default Admin Account:**
@@ -361,6 +368,8 @@ def main():
         ⚠️ **Important**: Change the admin password after first login!
         
         **Regular Users:** Any username/password creates a new account
+        
+        **Existing Users:** Login with username and password: `defaultpass123`
         """)
         return
     
@@ -431,59 +440,59 @@ def main():
             display_df['Role'] = display_df['is_admin'].apply(lambda x: '👑 Admin' if x else '👤 User')
             st.dataframe(display_df[['username', 'Role', 'video_count']], use_container_width=True)
     
-    # User Management Tab (Admin only)
-    with tab2:
-        if is_admin:
-            st.header("👥 User Management")
-            
-            # Get all users
-            all_users = get_all_users()
-            
-            if not all_users.empty:
-                st.subheader("All Users")
+        # User Management Tab (Admin only)
+        with tab2:
+            if is_admin:
+                st.header("👥 User Management")
                 
-                for idx, user in all_users.iterrows():
-                    with st.expander(f"{'👑' if user['is_admin'] else '👤'} {user['username']} ({user['video_count']} videos)"):
-                        
-                        col1, col2 = st.columns([3, 1])
-                        
-                        with col1:
-                            st.write(f"**Email:** {user['email']}")
-                            st.write(f"**Joined:** {user['created_at'][:10]}")
-                            st.write(f"**Videos:** {user['video_count']}")
-                            st.write(f"**Status:** {'👑 Admin' if user['is_admin'] else '👤 Regular User'}")
-                        
-                        with col2:
-                            # Don't allow demoting yourself
-                            if user['username'] != st.session_state.username:
-                                if user['is_admin']:
-                                    if st.button(f"Remove Admin", key=f"demote_{user['id']}"):
-                                        toggle_admin_status(user['id'], False)
-                                        st.success(f"Removed admin access from {user['username']}")
-                                        st.rerun()
+                # Get all users
+                all_users = get_all_users()
+                
+                if not all_users.empty:
+                    st.subheader("All Users")
+                    
+                    for idx, user in all_users.iterrows():
+                        with st.expander(f"{'👑' if user['is_admin'] else '👤'} {user['username']} ({user['video_count']} videos)"):
+                            
+                            col1, col2 = st.columns([3, 1])
+                            
+                            with col1:
+                                st.write(f"**Email:** {user['email']}")
+                                st.write(f"**Joined:** {user['created_at'][:10]}")
+                                st.write(f"**Videos:** {user['video_count']}")
+                                st.write(f"**Status:** {'👑 Admin' if user['is_admin'] else '👤 Regular User'}")
+                            
+                            with col2:
+                                # Don't allow demoting yourself
+                                if user['username'] != st.session_state.username:
+                                    if user['is_admin']:
+                                        if st.button(f"Remove Admin", key=f"demote_{user['id']}"):
+                                            toggle_admin_status(user['id'], False)
+                                            st.success(f"Removed admin access from {user['username']}")
+                                            st.rerun()
+                                    else:
+                                        if st.button(f"Make Admin", key=f"promote_{user['id']}"):
+                                            toggle_admin_status(user['id'], True)
+                                            st.success(f"Granted admin access to {user['username']}")
+                                            st.rerun()
                                 else:
-                                    if st.button(f"Make Admin", key=f"promote_{user['id']}"):
-                                        toggle_admin_status(user['id'], True)
-                                        st.success(f"Granted admin access to {user['username']}")
-                                        st.rerun()
-                            else:
-                                st.info("(You)")
+                                    st.info("(You)")
+                    
+                    # Summary stats
+                    admin_count = all_users['is_admin'].sum()
+                    regular_count = len(all_users) - admin_count
+                    
+                    st.subheader("User Summary")
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("👑 Admins", admin_count)
+                    with col2:
+                        st.metric("👤 Regular Users", regular_count)
+                    with col3:
+                        st.metric("📊 Total Users", len(all_users))
                 
-                # Summary stats
-                admin_count = all_users['is_admin'].sum()
-                regular_count = len(all_users) - admin_count
-                
-                st.subheader("User Summary")
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("👑 Admins", admin_count)
-                with col2:
-                    st.metric("👤 Regular Users", regular_count)
-                with col3:
-                    st.metric("📊 Total Users", len(all_users))
-            
-            else:
-                st.info("No users found")
+                else:
+                    st.info("No users found")
     
     # Video Analysis Tab
     analysis_tab = tab3 if is_admin else tab1
