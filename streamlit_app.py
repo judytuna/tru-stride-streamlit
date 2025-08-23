@@ -361,7 +361,11 @@ def main():
                     else:
                         user_id, error = create_user(new_username, new_email, new_password)
                         if user_id:
-                            st.sidebar.success("Account created successfully! Please login.")
+                            # Auto-login the new user
+                            st.session_state.user_id = user_id
+                            st.session_state.username = new_username
+                            st.session_state.is_admin = False
+                            st.sidebar.success("Account created successfully! Welcome!")
                             st.rerun()
                         else:
                             st.sidebar.error(error)
