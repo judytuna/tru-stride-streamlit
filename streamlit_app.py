@@ -164,8 +164,11 @@ def analyze_gait(video_file):
             tmp_file_path = tmp_file.name
         
         # Call your Gradio app using the correct endpoint
+        # Use gradio_client.handle_file() to properly format the file
+        from gradio_client import handle_file
+        
         result = client.predict(
-            tmp_file_path,
+            handle_file(tmp_file_path),
             api_name="/process_video_upload"
         )
         
