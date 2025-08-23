@@ -14,51 +14,18 @@ import re
 def init_db():
     conn = sqlite3.connect('horse_gait.db')
     c = conn.cursor()
+
+    # Create user table with full schema
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                    (id INTEGER PRIMARY KEY, username TEXT UNIQUE, email TEXT, 
+                    created_at TIMESTAMP, is_admin BOOLEAN DEFAULT 0, 
+                    password_hash TEXT)''')
     
-    # Check if users table exists and get its schema
-    c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-    table_exists = c.fetchone()
-    
-    if table_exists:
-        # Table exists, check if it needs migration
-        c.execute("PRAGMA table_info(users)")
-        columns = [column[1] for column in c.fetchall()]
-        
-        # Migration: Add missing columns
-        if 'is_admin' not in columns:
-            st.info("🔄 Migrating database: Adding admin features...")
-            c.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0")
-            
-        if 'password_hash' not in columns:
-            c.execute("ALTER TABLE users ADD COLUMN password_hash TEXT")
-            # Set default passwords for existing users
-            default_hash = hashlib.sha256("defaultpass123".encode()).hexdigest()
-            c.execute("UPDATE users SET password_hash = ? WHERE password_hash IS NULL", (default_hash,))
-            st.info("🔑 Updated existing users with default password: 'defaultpass123'")
-    
-    else:
-        # Create fresh tables with full schema
-        c.execute('''CREATE TABLE IF NOT EXISTS users
-                     (id INTEGER PRIMARY KEY, username TEXT UNIQUE, email TEXT, 
-                      created_at TIMESTAMP, is_admin BOOLEAN DEFAULT 0, 
-                      password_hash TEXT)''')
-    
-    # Videos table (unchanged)
+    # Videos table 
     c.execute('''CREATE TABLE IF NOT EXISTS videos
                  (id INTEGER PRIMARY KEY, user_id INTEGER, filename TEXT, 
                   upload_date TIMESTAMP, analysis_results TEXT,
                   FOREIGN KEY (user_id) REFERENCES users (id))''')
-    
-    # Create default admin user if doesn't exist
-    admin_username = os.getenv("ADMIN_USERNAME", "admin")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-    
-    c.execute("SELECT id FROM users WHERE username = ?", (admin_username,))
-    if not c.fetchone():
-        password_hash = hashlib.sha256(admin_password.encode()).hexdigest()
-        c.execute("INSERT INTO users (username, email, created_at, is_admin, password_hash) VALUES (?, ?, ?, ?, ?)",
-                 (admin_username, f"{admin_username}@horseanalyzer.com", datetime.now(), 1, password_hash))
-        st.success(f"✅ Created admin user: {admin_username}")
     
     conn.commit()
     conn.close()
