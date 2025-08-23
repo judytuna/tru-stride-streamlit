@@ -316,11 +316,11 @@ def parse_gradio_results(analysis_text):
 init_db()
 
 # App configuration
-st.set_page_config(page_title="Horse Gait Analyzer", page_icon="🐎", layout="wide")
+st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
 
 # Main app
 def main():
-    st.title("🐎 Horse Gait Analyzer")
+    st.title("🐎 Tru-Stride")
     
     # Authentication
     if 'user_id' not in st.session_state:
