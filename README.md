@@ -78,6 +78,9 @@ export ADMIN_PASSWORD="your_secure_password"
 ### Database
 The application uses SQLite database (`horse_gait.db`) which is created automatically on first run.
 
+### Streamlit Cloud
+Active at https://tru-stride.streamlit.app/ 
+
 ## 📋 Usage
 
 ### For Regular Users
@@ -143,10 +146,6 @@ gradio_client      # HuggingFace Gradio integration
 - [ ] Video comparison features
 - [ ] Mobile application support
 - [ ] Integration with additional AI models
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
