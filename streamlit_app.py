@@ -374,29 +374,8 @@ def main():
                 else:
                     st.sidebar.error("Please fill in all fields")
         
-        # Show admin setup info on first run
+        # Show login/signup prompt
         st.info("👆 Please login or sign up in the sidebar to continue")
-        
-        # Temporary database reset option (remove after first use)
-        if st.checkbox("🗑️ Reset Database (Admin Only - Deletes All Data)", value=False):
-            if st.button("⚠️ CONFIRM: Delete All Data and Reset Database"):
-                if os.path.exists('horse_gait.db'):
-                    os.remove('horse_gait.db')
-                    st.error("🗑️ Database deleted! Refresh the page to create a fresh database.")
-                    st.stop()
-        
-        st.markdown("""
-        ### 🚀 First Time Setup:
-        **Default Admin Account:**
-        - Username: `admin`
-        - Password: `admin123`
-        
-        ⚠️ **Important**: Change the admin password after first login!
-        
-        **Regular Users:** Any username/password creates a new account
-        
-        **Existing Users:** Login with username and password: `defaultpass123`
-        """)
         return
     
     # Sidebar navigation
