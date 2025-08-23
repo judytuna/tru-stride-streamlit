@@ -163,12 +163,34 @@ def analyze_gait(video_file):
             tmp_file.write(video_file.read())
             tmp_file_path = tmp_file.name
         
-        # Call your Gradio app
-        # Adjust the prediction call based on your Gradio interface
-        result = client.predict(
-            tmp_file_path,  # video input
-            api_name="/predict"  # adjust this to match your Gradio endpoint
-        )
+        # First, try to find the correct API endpoint
+        try:
+            # Try common endpoint names
+            result = client.predict(tmp_file_path)  # No api_name - uses default
+        except Exception as e1:
+            try:
+                result = client.predict(tmp_file_path, api_name="/analyze")
+            except Exception as e2:
+                try:
+                    result = client.predict(tmp_file_path, api_name="/analyze_video")
+                except Exception as e3:
+                    # List available endpoints for debugging
+                    st.warning("Checking available endpoints...")
+                    try:
+                        # Try to get available endpoints
+                        if hasattr(client, 'endpoints'):
+                            st.write("Available endpoints:", client.endpoints)
+                        elif hasattr(client, 'view_api'):
+                            api_info = client.view_api()
+                            st.write("API Info:", api_info)
+                        else:
+                            st.write("Client methods:", [method for method in dir(client) if not method.startswith('_')])
+                    except Exception as debug_e:
+                        st.write("Could not get endpoint info:", str(debug_e))
+                    
+                    # Clean up temp file before raising error
+                    os.unlink(tmp_file_path)
+                    raise Exception(f"Could not find working endpoint. Tried: default, /analyze, /analyze_video. Last error: {str(e3)}")
         
         # Clean up temp file
         os.unlink(tmp_file_path)
