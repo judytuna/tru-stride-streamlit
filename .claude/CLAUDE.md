@@ -1086,3 +1086,18 @@ The Problem
   - Something else is clearing the session
 
   Try logging in and let me know what the debug output shows!
+
+  ⏺ Now try logging in with wrong credentials first - let's see if we
+   get proper error messages showing that authenticate_user is
+  being called.
+
+  Then try with correct admin credentials and see if you get the
+  detailed error message or if it succeeds.
+
+  This will help us determine if:
+  1. The form is working and calling authenticate_user
+  2. authenticate_user is returning the expected values
+  3. The login flow is reaching the success branch
+
+  Try both wrong and correct credentials and tell me what error
+  messages you see!

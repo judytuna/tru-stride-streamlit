@@ -663,12 +663,10 @@ def main():
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
-                            
-                            # Debug: Check session right before rerun
-                            st.write(f"Debug: Session exists before rerun: {'supabase_session' in st.session_state}")
                             st.rerun()
                         else:
-                            st.error(error if error else "Invalid email or password")
+                            st.error(f"Login failed - Error: {error}")
+                            st.error(f"User ID returned: {user_id}")
                     else:
                         st.error("Please enter email and password")
 
