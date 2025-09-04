@@ -585,7 +585,7 @@ Perfect! Now as a regular user, you should see a new "🔍
 
   If RLS is working correctly:
   - Profiles I can see: Should be 1 (only your own profile)
-  - Usernames: Should only show "thefish"
+  - Usernames: Should only show the current username
   - Videos I can see: Should only show your videos (0-1 depending
   on what you've uploaded)
 
@@ -600,7 +600,7 @@ Perfect! Now as a regular user, you should see a new "🔍
 
 ⏺ 🚨 RLS IS NOT WORKING!
 
-  The test shows that as thefish (regular user), you can see:
+  The test shows that as (regular user), you can see:
   - All 5 profiles (should only see your own)
   - All usernames including admin accounts (major security issue)
   - All 3 videos from all users (should only see your 1 video)
@@ -684,7 +684,7 @@ Perfect! Now as a regular user, you should see a new "🔍
   );
 
   3. After running this, test again with the "Test My Data Access"
-  button as thefish
+  button as a regular user
 
   You should now see:
   - Profiles I can see: 1 (only my own)
@@ -693,3 +693,101 @@ Perfect! Now as a regular user, you should see a new "🔍
 
   This will secure the app so regular users can't see each other's
   data!
+
+...infinite recursion error
+
+⏺ Ah! The infinite recursion error - this is the same issue we
+  fixed before. The admin policy is trying to check profiles table
+  from within a profiles policy, causing a loop.
+
+  Fix the Infinite Recursion
+
+  Go back to SQL Editor and run this fix:
+
+  -- Drop the problematic admin policies
+  DROP POLICY IF EXISTS "Admins can read all profiles" ON profiles;
+  DROP POLICY IF EXISTS "Admins can read all videos" ON videos;
+  DROP POLICY IF EXISTS "Admins can update profiles" ON profiles;
+
+  -- Create fixed admin policies using auth.jwt() instead of
+  profiles lookup
+  CREATE POLICY "Admins can read all profiles" ON profiles FOR
+  SELECT USING (
+      (auth.jwt() ->> 'user_metadata' ->> 'is_admin')::boolean =
+  true OR
+      auth.uid() = id
+  );
+
+  CREATE POLICY "Admins can read all videos" ON videos FOR SELECT
+  USING (
+      (auth.jwt() ->> 'user_metadata' ->> 'is_admin')::boolean =
+  true OR
+      auth.uid() = user_id
+  );
+
+  CREATE POLICY "Admins can update profiles" ON profiles FOR UPDATE
+   USING (
+      (auth.jwt() ->> 'user_metadata' ->> 'is_admin')::boolean =
+  true OR
+      auth.uid() = id
+  );
+
+  However, this approach requires admin status to be stored in the
+  JWT metadata. Since we're using database-based admin flags, let's
+   use a simpler approach - remove admin policies entirely for now
+  and just have basic user isolation:
+
+  -- Drop admin policies entirely for now
+  DROP POLICY IF EXISTS "Admins can read all profiles" ON profiles;
+
+  DROP POLICY IF EXISTS "Admins can read all videos" ON videos;
+  DROP POLICY IF EXISTS "Admins can update profiles" ON profiles;
+
+  This will make it so:
+  - Regular users can only see their own data ✅
+  - Admin users will also only see their own data in regular
+  queries, but can bypass RLS in special admin functions
+
+  Try the simpler fix first and test!
+
+...tried the simpler fix (just the three lines) and regular and admin users only see themselves now lol
+
+ Perfect! RLS is now working correctly:
+
+  ✅ Regular users (thefish): Can only see their own data (1
+  profile, 1 video)✅ Admin users: Currently limited by RLS (only
+  see their own data)
+
+  Fix Admin Dashboard
+
+  The admin dashboard now needs the service role key to bypass RLS
+  and see all data. Here's what to do:
+
+  1. Get Your Service Role Key
+
+  1. Go to Supabase Dashboard → Settings → API
+  2. Copy the service_role key (NOT the anon key)
+  3. ⚠️ This key bypasses all RLS - keep it secret!
+
+  2. Add to Streamlit Secrets
+
+  Add this to your Streamlit Cloud secrets:
+
+  SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key-here"
+
+  3. Test Admin Dashboard
+
+  After adding the service role key:
+  - Admin dashboard should show all 5 users and 3 videos again
+  - Regular users will still only see their own data
+  - Security is maintained - RLS protects regular API calls,
+  service role only used for admin functions
+
+  This is the proper way to handle admin access with RLS enabled -
+  use the service role key for admin operations while keeping
+  regular user data isolated.
+
+  Would you like me to clean up the diagnostic tools once we
+  confirm this works?
+
+...now deplying to test new service role key secret

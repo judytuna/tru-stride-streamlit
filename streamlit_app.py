@@ -65,17 +65,32 @@ def init_supabase_tables():
     pass  # Tables should be created via Supabase dashboard/SQL editor
 
 def get_user_stats():
-    """Get user statistics from Supabase with error handling"""
+    """Get user statistics from Supabase with error handling - Admin function bypasses RLS"""
     try:
-        supabase = init_supabase()
-        
-        # Total users - just get essential fields
-        profiles_response = supabase.table('profiles').select('id,username,is_admin').execute()
-        total_users = len(profiles_response.data) if profiles_response.data else 0
-        
-        # Total videos - just get essential fields
-        videos_response = supabase.table('videos').select('id,user_id,upload_date').execute()
-        total_videos = len(videos_response.data) if videos_response.data else 0
+        # Initialize Supabase with service role key for admin queries
+        service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if service_role_key:
+            # Use service role to bypass RLS for admin dashboard
+            url = os.getenv("SUPABASE_URL")
+            admin_supabase = create_client(url, service_role_key)
+            
+            # Total users - bypass RLS
+            profiles_response = admin_supabase.table('profiles').select('id,username,is_admin').execute()
+            total_users = len(profiles_response.data) if profiles_response.data else 0
+            
+            # Total videos - bypass RLS  
+            videos_response = admin_supabase.table('videos').select('id,user_id,upload_date').execute()
+            total_videos = len(videos_response.data) if videos_response.data else 0
+        else:
+            # Fallback to regular client (RLS-protected)
+            st.warning("Service role key not configured - admin dashboard showing limited data")
+            supabase = init_supabase()
+            
+            profiles_response = supabase.table('profiles').select('id,username,is_admin').execute()
+            total_users = len(profiles_response.data) if profiles_response.data else 0
+            
+            videos_response = supabase.table('videos').select('id,user_id,upload_date').execute()
+            total_videos = len(videos_response.data) if videos_response.data else 0
         
         # Videos per user - optimize by using the data we already have
         videos_per_user_data = []
