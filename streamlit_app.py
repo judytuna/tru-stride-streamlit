@@ -524,16 +524,13 @@ def main():
                         if 'creating_user' not in st.session_state:
                             st.session_state.creating_user = True
                             
-                            with st.sidebar.spinner("Creating account..."):
+                            with st.spinner("Creating account..."):
                                 user_id, error = create_user(new_username, new_email, new_password)
                                 
                             if user_id:
-                                # Auto-login the new user
-                                st.session_state.user_id = user_id
-                                st.session_state.username = new_username
-                                st.session_state.is_admin = False
+                                # Don't auto-login, just show success message
                                 del st.session_state.creating_user
-                                st.sidebar.success("Account created successfully!")
+                                st.sidebar.success("Account created! Please check your email to verify your account, then login.")
                                 st.rerun()
                             else:
                                 del st.session_state.creating_user
