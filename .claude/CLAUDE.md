@@ -371,3 +371,20 @@ Auth error: Invalid login credentials
   logo's color palette.
 
   How does the branded app look once deployed?
+
+  ⏺ Perfect! Now let's commit this change:
+
+  git add .
+  git commit -m "Use Tru-Stride logo as favicon"
+  git push
+
+  Streamlit will automatically resize your logo to use as the
+  favicon in the browser tab. The logo will appear as:
+
+  🌐 Browser Tab: Your Tru-Stride logo as the favicon (tiny icon)
+  📱 Sidebar: Full-size logo (200px width)
+
+  This gives you consistent branding both in the browser tab and
+  within the app itself. The favicon will help users identify your
+  app when they have multiple tabs open!
+

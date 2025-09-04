@@ -420,8 +420,12 @@ def parse_gradio_results(analysis_text):
 # init_supabase_tables()  # Disabled - tables created manually
 
 
-# App configuration
-st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
+# App configuration  
+st.set_page_config(
+    page_title="Tru-Stride", 
+    page_icon="assets/tru-stride-logo.png",  # Use logo as favicon
+    layout="wide"
+)
 
 # Custom CSS for logo colors and styling
 st.markdown("""
