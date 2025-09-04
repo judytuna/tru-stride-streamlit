@@ -467,7 +467,7 @@ def parse_gradio_results(analysis_text):
         }
 
 # Initialize Supabase tables (run SQL in Supabase dashboard first)
-init_supabase_tables()
+# init_supabase_tables()  # Disabled - tables created manually
 
 # Create default admin users from environment variables (temporarily disabled for debugging)
 # create_default_admin_users()

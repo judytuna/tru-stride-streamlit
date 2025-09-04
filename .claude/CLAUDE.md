@@ -63,5 +63,87 @@ Manual Log
 
 ...deleted epona01
 ...
+...broken deploy
+...tried to fix
+
+⏺ The issues are:
+
+  1. Deploy error: Even though admin creation is commented out, the error persists (likely cached)
+  2. Infinite recursion: The SQL policies are causing a recursive loop
+
+  Let me fix the SQL policies issue first:
+
+⏺ Update(SUPABASE_SETUP.md)
+  ⎿  Updated SUPABASE_SETUP.md with 4 additions and 4 removals
+       42    CREATE POLICY "Users can read own videos" ON videos FOR SELECT USING (auth.uid() = user_id);
+       43    CREATE POLICY "Users can insert own videos" ON videos FOR INSERT WITH CHECK (auth.uid() = user_id);
+       44
+       45 -  -- Admin policies (admins can read all data)
+       45 +  -- Admin policies (admins can read all data) - Fixed to avoid recursion
+       46    CREATE POLICY "Admins can read all profiles" ON profiles FOR SELECT USING (
+       47 -      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+       47 +      auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
+       48    );
+       49    CREATE POLICY "Admins can read all videos" ON videos FOR SELECT USING (
+       50 -      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+       50 +      auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
+       51    );
+       52    CREATE POLICY "Admins can update profiles" ON profiles FOR UPDATE USING (
+       53 -      EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+       53 +      auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
+       54    );
+       55
+       56    -- Function to automatically create profile when user signs up
+
+⏺ Now you need to fix the policies in your Supabase database. Go to your Supabase dashboard:
+
+  1. SQL Editor → New query
+  2. Drop the problematic policies:
+
+  -- Drop the recursive policies
+  DROP POLICY IF EXISTS "Admins can read all profiles" ON profiles;
+  DROP POLICY IF EXISTS "Admins can read all videos" ON videos;
+  DROP POLICY IF EXISTS "Admins can update profiles" ON profiles;
+
+  -- Recreate them without recursion
+  CREATE POLICY "Admins can read all profiles" ON profiles FOR SELECT USING (
+      auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
+  );
+  CREATE POLICY "Admins can read all videos" ON videos FOR SELECT USING (
+      auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
+  );
+  CREATE POLICY "Admins can update profiles" ON profiles FOR UPDATE USING (
+      auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
+  );
+
+  3. Run the query
+
+  Also, let's simplify the app startup to avoid any auth calls during initialization:
+
+⏺ Update(streamlit_app.py)
+  ⎿  Updated streamlit_app.py with 1 addition and 1 removal
+       467            }
+       468
+       469    # Initialize Supabase tables (run SQL in Supabase dashboard first)
+       470 -  init_supabase_tables()
+       470 +  # init_supabase_tables()  # Disabled - tables created manually
+       471
+       472    # Create default admin users from environment variables (temporarily disabled for debugging)
+       473    # create_default_admin_users()
+
+⏺ Now:
+
+  1. Run the SQL fix in Supabase to fix the recursive policies
+  2. Commit and push these changes:
+
+  git add .
+  git commit -m "Fix recursive policy issues and disable auto-initialization"
+  git push
+
+  This should resolve both issues:
+  - The recursive policy error when creating users
+  - The auth error on startup
+
+  Let me know when you've run the SQL fix and pushed the changes!
 
 

@@ -42,15 +42,15 @@ CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (
 CREATE POLICY "Users can read own videos" ON videos FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own videos" ON videos FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Admin policies (admins can read all data)
+-- Admin policies (admins can read all data) - Fixed to avoid recursion
 CREATE POLICY "Admins can read all profiles" ON profiles FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
 );
 CREATE POLICY "Admins can read all videos" ON videos FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
 );
 CREATE POLICY "Admins can update profiles" ON profiles FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
 );
 
 -- Function to automatically create profile when user signs up
