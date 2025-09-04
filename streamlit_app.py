@@ -428,8 +428,7 @@ st.set_page_config(
 )
 
 # Add Open Graph meta tags for social media previews
-st.markdown("""
-<head>
+st.html("""
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://tru-stride.streamlit.app/">
@@ -448,8 +447,7 @@ st.markdown("""
     <meta name="description" content="Horse gait analysis using artificial intelligence. Upload videos of your horse to get detailed stride analysis and performance insights.">
     <meta name="keywords" content="horse, gait, analysis, AI, artificial intelligence, equine, stride, performance">
     <meta name="author" content="Tru-Stride">
-</head>
-""", unsafe_allow_html=True)
+""")
 
 # Custom CSS for logo colors and styling
 st.markdown("""
