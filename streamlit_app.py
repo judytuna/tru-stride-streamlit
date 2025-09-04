@@ -104,11 +104,19 @@ def get_user_stats():
         if videos_response.data:
             from collections import defaultdict
             date_counts = defaultdict(int)
+            
+            # Debug: Let's see what we're getting
             for video in videos_response.data:
-                if video.get('upload_date'):
-                    date_str = video['upload_date'][:10]
+                upload_date = video.get('upload_date')
+                if upload_date:
+                    # Handle both date strings and datetime objects
+                    if isinstance(upload_date, str):
+                        date_str = upload_date[:10]
+                    else:
+                        date_str = str(upload_date)[:10]
                     date_counts[date_str] += 1
             
+            # Create the trends data
             upload_trends_data = [{'date': date, 'uploads': count}
                                  for date, count in sorted(date_counts.items(), reverse=True)[:30]]
         
@@ -708,6 +716,14 @@ def main():
                     st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No upload trend data yet")
+                
+                # Debug info (remove after fixing)
+                with st.expander("Debug: Upload trends data"):
+                    st.write(f"Upload trends DataFrame shape: {upload_trends.shape}")
+                    if not upload_trends.empty:
+                        st.write(upload_trends)
+                    else:
+                        st.write("Upload trends DataFrame is empty")
 
             # Detailed user table
             st.subheader("User Activity Overview")

@@ -509,3 +509,24 @@ The changes I made:
 
   Try logging back in and accessing the User Management tab - it
   should work without the "Server disconnected" error now!
+
+  ...noticed uploads table in admin dashboard is empty
+
+  ow when you go to the Admin Dashboard, you should see a "Debug:
+  Upload trends data" expandable section that will show us:
+
+  1. The shape of the upload trends DataFrame (how many
+  rows/columns)
+  2. The actual data if it exists
+  3. Whether it's empty and why
+
+  This will help us figure out why the upload trends graph is empty
+   despite having 3 videos uploaded. The issue might be:
+
+  - Upload dates not being stored properly
+  - Date format issues
+  - The data processing logic
+  - Database query issues
+
+  Check the debug section and let me know what it shows - then I
+  can fix the underlying issue!
