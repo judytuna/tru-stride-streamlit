@@ -1101,3 +1101,18 @@ The Problem
 
   Try both wrong and correct credentials and tell me what error
   messages you see!
+
+  ⏺ Now try logging in with correct credentials again. If the session
+   storage is failing, you should see one of these debug error
+  messages:
+
+  - "DEBUG: No session in response" - The Supabase response doesn't
+   contain a session
+  - "DEBUG: Failed to store session in st.session_state" - Session
+  exists but can't be stored in Streamlit
+  - "DEBUG: Error storing session: [error]" - Exception during
+  storage
+
+  This will tell us exactly where the session persistence is
+  breaking! Try logging in and let me know what error message (if
+  any) appears.

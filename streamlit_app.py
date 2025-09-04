@@ -181,16 +181,21 @@ def authenticate_user(email, password):
             if not response.user.email_confirmed_at:
                 return None, False, None, "Please check your email and click the verification link before logging in."
             
-            # Store the session in Streamlit session state for persistence
-            st.session_state.supabase_session = response.session
-            st.session_state.supabase_user = response.user
+            # Debug the session before storing
+            session_exists = response.session is not None
+            if not session_exists:
+                return None, False, None, f"DEBUG: No session in response. Response keys: {list(response.__dict__.keys()) if hasattr(response, '__dict__') else 'No dict'}"
             
-            # Debug: Check if session was stored
-            print(f"Debug: Session stored? {'supabase_session' in st.session_state}")
-            print(f"Debug: Session object: {response.session is not None}")
-            if response.session:
-                print(f"Debug: Session has access_token: {hasattr(response.session, 'access_token')}")
-                print(f"Debug: Access token exists: {bool(getattr(response.session, 'access_token', None))}")
+            # Store the session in Streamlit session state for persistence
+            try:
+                st.session_state.supabase_session = response.session
+                st.session_state.supabase_user = response.user
+                # Verify it was stored
+                stored_ok = 'supabase_session' in st.session_state
+                if not stored_ok:
+                    return None, False, None, "DEBUG: Failed to store session in st.session_state"
+            except Exception as e:
+                return None, False, None, f"DEBUG: Error storing session: {str(e)}"
             
             # Get profile info to check admin status
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
