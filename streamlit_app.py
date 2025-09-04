@@ -708,11 +708,28 @@ def main():
             with col2:
                 st.subheader("Upload Trends (Last 30 Days)")
                 if not upload_trends.empty:
+                    # Use scatter plot with lines and markers for better single-point visibility
                     fig = px.line(upload_trends,
                                 x='date', y='uploads',
-                                title="Daily Upload Trends")
+                                title="Daily Upload Trends",
+                                markers=True)  # Add markers to show data points
+                    
                     # Force integer-only y-axis ticks
                     fig.update_yaxes(dtick=1)
+                    
+                    # Ensure proper date formatting and spacing
+                    fig.update_xaxes(
+                        tickmode='linear',
+                        dtick="D1"  # Show every day
+                    )
+                    
+                    # Make sure single points are visible
+                    fig.update_traces(
+                        mode='lines+markers',
+                        marker=dict(size=8),
+                        line=dict(width=3)
+                    )
+                    
                     st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No upload trend data yet")
