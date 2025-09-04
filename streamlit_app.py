@@ -691,6 +691,8 @@ def main():
                     fig = px.bar(videos_per_user,
                                x='username', y='video_count',
                                title="Video Uploads by User")
+                    # Force integer-only y-axis ticks
+                    fig.update_yaxes(dtick=1)
                     st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No video data yet")
@@ -701,6 +703,8 @@ def main():
                     fig = px.line(upload_trends,
                                 x='date', y='uploads',
                                 title="Daily Upload Trends")
+                    # Force integer-only y-axis ticks
+                    fig.update_yaxes(dtick=1)
                     st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No upload trend data yet")
