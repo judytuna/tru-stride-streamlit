@@ -22,56 +22,6 @@ def init_supabase():
     return create_client(url, key)
 
 # Supabase database functions
-def create_default_admin_users():
-    """
-    Create default admin users using Supabase Auth
-    """
-    supabase = init_supabase()
-
-    default_users = [
-        {'email': 'judytuna+admin@gmail.com', 'username': 'admin', 'is_admin': True}
-    ]
-
-    for user_info in default_users:
-        username = user_info['username']
-        email = user_info['email']
-        env_var_name = f"{username.upper()}_PASSWORD"
-        password = os.getenv(env_var_name)
-
-        if password and len(password) >= 6:  # Supabase requires minimum 6 chars
-            try:
-                # Check if user already exists in our profiles table first
-                existing = supabase.table('profiles').select('*').eq('username', username).execute()
-                if existing.data:
-                    st.toast(f"Admin user {username} already exists", icon="ℹ️")
-                else:
-                    # Try to sign up the user
-                    response = supabase.auth.sign_up({
-                        "email": email,
-                        "password": password,
-                        "options": {
-                            "data": {
-                                "username": username,
-                                "is_admin": user_info['is_admin']
-                            }
-                        }
-                    })
-                    if response.user:
-                        st.toast(f"Created admin user: {username}", icon="✅")
-                    else:
-                        st.toast(f"Failed to create {username} - no user returned", icon="⚠️")
-
-            except Exception as e:
-                error_msg = str(e).lower()
-                if "already registered" in error_msg or "already exists" in error_msg:
-                    st.toast(f"Admin user {username} already exists", icon="ℹ️")
-                else:
-                    st.toast(f"Could not create {username}: {str(e)}", icon="⚠️")
-        elif password:
-            st.toast(f"Password for {username} must be at least 6 characters", icon="⚠️")
-        else:
-            # No password env var set, skip creation
-            pass
 
 def init_supabase_tables():
     """
@@ -469,8 +419,6 @@ def parse_gradio_results(analysis_text):
 # Initialize Supabase tables (run SQL in Supabase dashboard first)
 # init_supabase_tables()  # Disabled - tables created manually
 
-# Create default admin users from environment variables (disabled - admin already created)
-# create_default_admin_users()
 
 # App configuration
 st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
