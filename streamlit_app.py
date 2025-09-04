@@ -197,9 +197,18 @@ def create_user(username, email, password):
     """
     Create a new user account using Supabase Auth
     """
+    import signal
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Auth request timed out after 10 seconds")
+    
     supabase = init_supabase()
     
     try:
+        # Set a 10-second timeout
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(10)
+        
         # Sign up with Supabase Auth
         response = supabase.auth.sign_up({
             "email": email,
@@ -212,16 +221,21 @@ def create_user(username, email, password):
             }
         })
         
+        # Clear the alarm
+        signal.alarm(0)
+        
         if response.user:
-            # Don't manually create profile - the trigger should handle it
-            # But let's verify it worked
             return response.user.id, None
         else:
             return None, "Failed to create account - no user returned"
             
+    except TimeoutError as e:
+        signal.alarm(0)
+        return None, f"Timeout: {str(e)}"
     except Exception as e:
+        signal.alarm(0)
         error_msg = str(e)
-        print(f"User creation error: {error_msg}")  # Debug logging
+        print(f"User creation error: {error_msg}")
         if "already registered" in error_msg or "already exists" in error_msg:
             return None, "Email already exists"
         return None, f"Error: {error_msg}"
