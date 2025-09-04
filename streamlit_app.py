@@ -181,21 +181,9 @@ def authenticate_user(email, password):
             if not response.user.email_confirmed_at:
                 return None, False, None, "Please check your email and click the verification link before logging in."
             
-            # Debug the session before storing
-            session_exists = response.session is not None
-            if not session_exists:
-                return None, False, None, f"DEBUG: No session in response. Response keys: {list(response.__dict__.keys()) if hasattr(response, '__dict__') else 'No dict'}"
-            
             # Store the session in Streamlit session state for persistence
-            try:
-                st.session_state.supabase_session = response.session
-                st.session_state.supabase_user = response.user
-                # Verify it was stored
-                stored_ok = 'supabase_session' in st.session_state
-                if not stored_ok:
-                    return None, False, None, "DEBUG: Failed to store session in st.session_state"
-            except Exception as e:
-                return None, False, None, f"DEBUG: Error storing session: {str(e)}"
+            st.session_state.supabase_session = response.session
+            st.session_state.supabase_user = response.user
             
             # Get profile info to check admin status
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
@@ -615,16 +603,10 @@ def main():
 
     # Check for existing Supabase session on page load  
     if 'user_id' not in st.session_state:
-        # Debug session restoration
-        has_stored_session = 'supabase_session' in st.session_state
-        st.sidebar.write(f"Debug: Has stored session: {has_stored_session}")
-        
         try:
             supabase = init_supabase()
             # Try to get current session
             session = supabase.auth.get_session()
-            st.sidebar.write(f"Debug: Session from auth: {session is not None}")
-            st.sidebar.write(f"Debug: Session user: {session.user.id[:8] if session and session.user else 'None'}")
             
             if session and session.user:
                 # Restore user session
@@ -634,13 +616,7 @@ def main():
                     st.session_state.user_id = session.user.id
                     st.session_state.username = profile.get('username', session.user.email)
                     st.session_state.is_admin = profile.get('is_admin', False)
-                    st.sidebar.success("Session restored!")
-                else:
-                    st.sidebar.warning("No profile found")
-            else:
-                st.sidebar.warning("No valid session found")
         except Exception as e:
-            st.sidebar.error(f"Session restore failed: {str(e)}")
             pass  # If session check fails, continue with normal auth flow
 
     # Authentication
@@ -668,15 +644,7 @@ def main():
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
-                            
-                            # Show debug info in main area before rerun
-                            st.success(f"Login successful for {username}!")
-                            st.info(f"DEBUG: Session stored = {'supabase_session' in st.session_state}")
-                            st.info("Click anywhere to continue...")
-                            
-                            # Wait for user interaction before rerun
-                            if st.button("Continue to App"):
-                                st.rerun()
+                            st.rerun()
                         else:
                             st.error(f"Login failed - Error: {error}")
                             st.error(f"User ID returned: {user_id}")
