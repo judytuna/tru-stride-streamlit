@@ -630,7 +630,15 @@ def main():
         st.sidebar.info("👑 Admin Access")
 
     if st.sidebar.button("Logout"):
-        for key in ['user_id', 'username', 'is_admin']:
+        # Sign out from Supabase
+        try:
+            supabase = init_supabase()
+            supabase.auth.sign_out()
+        except:
+            pass  # Continue even if Supabase sign out fails
+        
+        # Clear all session state
+        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename']:
             if key in st.session_state:
                 del st.session_state[key]
         st.rerun()

@@ -467,3 +467,25 @@ The changes I made:
 
   The analysis results will now remain visible until you analyze a
   new video!
+
+  ...logout doesn't work rofl
+
+   The logout button should now work properly! The improvements I
+  made:
+
+  1. Supabase sign out - Properly signs out from Supabase Auth
+  (clears the server-side session)
+  2. Clear analysis data - Also clears any stored analysis results
+  and filenames
+  3. Complete session clearing - Removes all user-related data from
+   session state
+  4. Error handling - If Supabase sign out fails, it still
+  continues with local logout
+
+  Now when you click "Logout":
+  - ✅ Signs out from Supabase Auth
+  - ✅ Clears all session data
+  - ✅ Returns you to the login screen
+  - ✅ Clears any analysis results that were stored
+
+  The logout button should work as expected now!
