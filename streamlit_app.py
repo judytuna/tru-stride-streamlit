@@ -776,77 +776,88 @@ def main():
                         save_analysis(st.session_state.user_id,
                                     uploaded_file.name,
                                     str(results))
+                        
+                        # Store results in session state so they persist
+                        st.session_state.analysis_results = results
+                        st.session_state.analysis_filename = uploaded_file.name
 
-                        # Display results
-                        st.success("✅ Analysis complete!")
+        # Display results if they exist in session state
+        if 'analysis_results' in st.session_state:
+            results = st.session_state.analysis_results
+            
+            # Display results
+            st.success("✅ Analysis complete!")
 
-                        col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-                        with col1:
-                            st.subheader("🏇 Stride Analysis Results")
+            with col1:
+                st.subheader("🏇 Stride Analysis Results")
 
-                            # Classification with color coding
-                            classification = results.get("classification", "Unknown")
-                            if classification == "NORMAL":
-                                st.success(f"**Classification:** {classification}")
-                            elif classification == "ABNORMAL":
-                                st.error(f"**Classification:** {classification}")
-                            else:
-                                st.info(f"**Classification:** {classification}")
+                # Classification with color coding
+                classification = results.get("classification", "Unknown")
+                if classification == "NORMAL":
+                    st.success(f"**Classification:** {classification}")
+                elif classification == "ABNORMAL":
+                    st.error(f"**Classification:** {classification}")
+                else:
+                    st.info(f"**Classification:** {classification}")
 
-                            st.metric("Confidence", f"{results['confidence']*100:.0f}%")
-                            st.metric("Processing Time", f"{results.get('processing_time', 0):.1f}s")
+                st.metric("Confidence", f"{results['confidence']*100:.0f}%")
+                st.metric("Processing Time", f"{results.get('processing_time', 0):.1f}s")
 
-                            # Show details if available
-                            if results.get('details'):
-                                st.write(f"**Analysis:** {results['details']}")
+                # Show details if available
+                if results.get('details'):
+                    st.write(f"**Analysis:** {results['details']}")
 
-                        with col2:
-                            st.subheader("📊 Stride Metrics")
+            with col2:
+                st.subheader("📊 Stride Metrics")
 
-                            # Raw stride metrics from your model
-                            col2a, col2b = st.columns(2)
-                            with col2a:
-                                st.metric("Stride Variability", f"{results.get('stride_variability', 0):.3f}")
-                                st.metric("Mean Knee Angle", f"{results.get('knee_angle', 0):.1f}°")
-                            with col2b:
-                                st.metric("Body Length Variation", f"{results.get('body_length_variation', 0):.3f}")
-                                st.metric("Derived Stride Length", f"{results['stride_length']}m")
+                # Raw stride metrics from your model
+                col2a, col2b = st.columns(2)
+                with col2a:
+                    st.metric("Stride Variability", f"{results.get('stride_variability', 0):.3f}")
+                    st.metric("Mean Knee Angle", f"{results.get('knee_angle', 0):.1f}°")
+                with col2b:
+                    st.metric("Body Length Variation", f"{results.get('body_length_variation', 0):.3f}")
+                    st.metric("Derived Stride Length", f"{results['stride_length']}m")
 
-                        # Quality scores section
-                        st.subheader("🎯 Quality Scores")
-                        col3, col4 = st.columns(2)
+            # Quality scores section
+            st.subheader("🎯 Quality Scores")
+            col3, col4 = st.columns(2)
 
-                        with col3:
-                            st.metric("Rhythm Score", f"{results['rhythm_score']}/10",
-                                     help="Based on stride variability (lower variability = higher score)")
-                        with col4:
-                            st.metric("Symmetry Score", f"{results['symmetry_score']}/10",
-                                     help="Based on body length variation (lower variation = higher score)")
+            with col3:
+                st.metric("Rhythm Score", f"{results['rhythm_score']}/10",
+                         help="Based on stride variability (lower variability = higher score)")
+            with col4:
+                st.metric("Symmetry Score", f"{results['symmetry_score']}/10",
+                         help="Based on body length variation (lower variation = higher score)")
 
-                        # Overall score visualization
-                        if results['rhythm_score'] > 0 and results['symmetry_score'] > 0:
-                            overall_score = (results['rhythm_score'] + results['symmetry_score']) / 2
+            # Overall score visualization
+            if results['rhythm_score'] > 0 and results['symmetry_score'] > 0:
+                overall_score = (results['rhythm_score'] + results['symmetry_score']) / 2
 
-                            fig = go.Figure(go.Indicator(
-                                mode = "gauge+number+delta",
-                                value = overall_score,
-                                domain = {'x': [0, 1], 'y': [0, 1]},
-                                title = {'text': "Overall Stride Quality"},
-                                delta = {'reference': 8.0},  # Good score reference
-                                gauge = {'axis': {'range': [None, 10]},
-                                       'bar': {'color': "darkgreen" if classification == "NORMAL" else "darkred"},
-                                       'steps': [
-                                           {'range': [0, 5], 'color': "lightgray"},
-                                           {'range': [5, 8], 'color': "yellow"},
-                                           {'range': [8, 10], 'color': "lightgreen"}],
-                                       'threshold': {'line': {'color': "red", 'width': 4},
-                                                   'thickness': 0.75, 'value': 7}}))
-                            st.plotly_chart(fig, use_container_width=True)
+                fig = go.Figure(go.Indicator(
+                    mode = "gauge+number+delta",
+                    value = overall_score,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': "Overall Stride Quality"},
+                    delta = {'reference': 8.0},  # Good score reference
+                    gauge = {'axis': {'range': [None, 10]},
+                           'bar': {'color': "darkgreen" if classification == "NORMAL" else "darkred"},
+                           'steps': [
+                               {'range': [0, 5], 'color': "lightgray"},
+                               {'range': [5, 8], 'color': "yellow"},
+                               {'range': [8, 10], 'color': "lightgreen"}],
+                           'threshold': {'line': {'color': "red", 'width': 4},
+                                       'thickness': 0.75, 'value': 7}}))
+                st.plotly_chart(fig, use_container_width=True)
 
-                        # Show raw output for debugging (remove in production)
-                        if st.checkbox("Show raw model output (debug)"):
-                            st.json(results)
+            # Show raw output for debugging (remove in production)
+            st.markdown("---")  # Divider
+            show_raw = st.checkbox("Show raw model output (debug)")
+            if show_raw:
+                st.subheader("🔧 Raw Model Output")
+                st.json(results)
 
     # My Videos Tab
     videos_tab = tab4 if is_admin else tab2

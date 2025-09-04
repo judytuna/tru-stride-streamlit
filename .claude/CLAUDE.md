@@ -445,3 +445,25 @@ The changes I made:
 
   This should fix the "Server disconnected" error and make the
   admin dashboard much more reliable!
+
+...i noticed the "show raw" checkbox just deleted everything
+
+  The fix I implemented:
+
+  1. Stores results in session state - When analysis completes,
+  results are stored in st.session_state.analysis_results
+  2. Persistent display - The results display is now outside the
+  "Analyze" button condition, so it shows whenever results exist in
+   session state
+  3. Checkbox works properly - Now when you click the "Show raw
+  model output" checkbox, the results remain visible because
+  they're stored in session state
+
+  Now the "show raw" checkbox should work as intended:
+  - ✅ Analysis results stay visible when checkbox is clicked
+  - ✅ Checkbox adds the raw JSON output underneath instead of
+  replacing everything
+  - ✅ Results persist even if you navigate away and come back
+
+  The analysis results will now remain visible until you analyze a
+  new video!
