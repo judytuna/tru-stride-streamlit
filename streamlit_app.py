@@ -9,8 +9,7 @@ import json
 import re
 from supabase import create_client, Client
 
-# Initialize Supabase client
-@st.cache_resource
+# Initialize Supabase client (removed cache to fix cross-browser session sharing)
 def init_supabase():
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_ANON_KEY")

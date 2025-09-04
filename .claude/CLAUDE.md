@@ -791,3 +791,34 @@ Perfect! Now as a regular user, you should see a new "🔍
   confirm this works?
 
 ...now deplying to test new service role key secret
+...seems to work well now!
+...except user logins exist across different browsers, which is weird
+
+The Problem
+
+  The @st.cache_resource decorator was creating a globally shared
+  Supabase client that persisted authentication state across
+  different browsers and sessions. This is a serious security
+  issue.
+
+  The Fix
+
+  Removed @st.cache_resource so each browser session gets its own
+  independent Supabase client instance.
+
+  Test the Fix
+
+  Now try this:
+
+  1. Chrome (thefish): Logout completely, then login as thefish
+  2. Firefox: Login as admin
+  3. Go back to Chrome: Should still be thefish, NOT admin
+
+  Each browser should now maintain its own independent session. The
+   authentication state should no longer leak between browsers.
+
+  This was a critical security fix - thanks for catching that!
+  Sessions should now be properly isolated between different
+  browsers and users.
+
+  ...oh wow that's a big problem lmao
