@@ -632,18 +632,13 @@ def main():
 
                 if login_button:
                     if email and password:
-                        # Debug: Show login attempt
                         with st.spinner("Logging in..."):
                             user_id, is_admin, username, error = authenticate_user(email, password)
-                        
-                        # Debug: Show results  
-                        st.write(f"Debug - user_id: {user_id}, error: {error}")
                         
                         if user_id:
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
-                            st.success(f"Login successful! Welcome {username}")
                             st.rerun()
                         else:
                             st.error(error if error else "Invalid email or password")
