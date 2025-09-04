@@ -197,18 +197,9 @@ def create_user(username, email, password):
     """
     Create a new user account using Supabase Auth
     """
-    import signal
-    
-    def timeout_handler(signum, frame):
-        raise TimeoutError("Auth request timed out after 10 seconds")
-    
     supabase = init_supabase()
     
     try:
-        # Set a 10-second timeout
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(10)
-        
         # Sign up with Supabase Auth
         response = supabase.auth.sign_up({
             "email": email,
@@ -221,19 +212,12 @@ def create_user(username, email, password):
             }
         })
         
-        # Clear the alarm
-        signal.alarm(0)
-        
         if response.user:
             return response.user.id, None
         else:
             return None, "Failed to create account - no user returned"
             
-    except TimeoutError as e:
-        signal.alarm(0)
-        return None, f"Timeout: {str(e)}"
     except Exception as e:
-        signal.alarm(0)
         error_msg = str(e)
         print(f"User creation error: {error_msg}")
         if "already registered" in error_msg or "already exists" in error_msg:
@@ -559,15 +543,38 @@ def main():
         st.info("👆 Please login or sign up in the sidebar to continue")
         
         # Debug: Test Supabase connection
-        if st.button("Test Supabase Connection"):
-            try:
-                supabase = init_supabase()
-                # Try a simple query
-                response = supabase.table('profiles').select('count').execute()
-                st.success("✅ Supabase connection works!")
-                st.write(f"Connection test result: {response}")
-            except Exception as e:
-                st.error(f"❌ Supabase connection failed: {str(e)}")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Test DB Connection"):
+                try:
+                    supabase = init_supabase()
+                    response = supabase.table('profiles').select('count').execute()
+                    st.success("✅ DB connection works!")
+                    st.write(f"Result: {response}")
+                except Exception as e:
+                    st.error(f"❌ DB connection failed: {str(e)}")
+        
+        with col2:
+            if st.button("Test Auth Signup"):
+                try:
+                    supabase = init_supabase()
+                    st.info("Testing auth signup...")
+                    
+                    # Try a test signup
+                    response = supabase.auth.sign_up({
+                        "email": "test@example.com",
+                        "password": "testpass123"
+                    })
+                    
+                    st.success("✅ Auth signup works!")
+                    st.write(f"Auth response: {response}")
+                    
+                    # Clean up - delete the test user
+                    if response.user:
+                        st.info("Test user created, please delete from Supabase dashboard")
+                        
+                except Exception as e:
+                    st.error(f"❌ Auth signup failed: {str(e)}")
         
         return
 
