@@ -691,7 +691,7 @@ def main():
                     fig = px.bar(videos_per_user,
                                x='username', y='video_count',
                                title="Video Uploads by User")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No video data yet")
 
@@ -701,7 +701,7 @@ def main():
                     fig = px.line(upload_trends,
                                 x='date', y='uploads',
                                 title="Daily Upload Trends")
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No upload trend data yet")
 
@@ -710,7 +710,7 @@ def main():
             # Add admin indicator to the table
             display_df = videos_per_user.copy()
             display_df['Role'] = display_df['is_admin'].apply(lambda x: '👑 Admin' if x else '👤 User')
-            st.dataframe(display_df[['username', 'Role', 'video_count']], use_container_width=True)
+            st.dataframe(display_df[['username', 'Role', 'video_count']], width='stretch')
 
         # User Management Tab (Admin only)
         with tab2:
@@ -871,7 +871,7 @@ def main():
                                {'range': [8, 10], 'color': "lightgreen"}],
                            'threshold': {'line': {'color': "red", 'width': 4},
                                        'thickness': 0.75, 'value': 7}}))
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
             # Show raw output for debugging (remove in production)
             st.markdown("---")  # Divider
