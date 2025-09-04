@@ -623,29 +623,32 @@ def main():
 
         if auth_mode == "Login":
             st.sidebar.subheader("Login")
-            email = st.sidebar.text_input("Email", key="login_email")
-            password = st.sidebar.text_input("Password", type="password", key="login_password")
+            
+            # Use form to ensure proper state management
+            with st.sidebar.form("login_form"):
+                email = st.text_input("Email", key="login_email")
+                password = st.text_input("Password", type="password", key="login_password")
+                login_button = st.form_submit_button("Login")
 
-            if st.sidebar.button("Login"):
-                if email and password:
-                    # Debug: Show login attempt
-                    with st.sidebar:
+                if login_button:
+                    if email and password:
+                        # Debug: Show login attempt
                         with st.spinner("Logging in..."):
                             user_id, is_admin, username, error = authenticate_user(email, password)
-                    
-                    # Debug: Show results
-                    st.sidebar.write(f"Debug - user_id: {user_id}, error: {error}")
-                    
-                    if user_id:
-                        st.session_state.user_id = user_id
-                        st.session_state.username = username
-                        st.session_state.is_admin = is_admin
-                        st.sidebar.success(f"Login successful! Welcome {username}")
-                        st.rerun()
+                        
+                        # Debug: Show results  
+                        st.write(f"Debug - user_id: {user_id}, error: {error}")
+                        
+                        if user_id:
+                            st.session_state.user_id = user_id
+                            st.session_state.username = username
+                            st.session_state.is_admin = is_admin
+                            st.success(f"Login successful! Welcome {username}")
+                            st.rerun()
+                        else:
+                            st.error(error if error else "Invalid email or password")
                     else:
-                        st.sidebar.error(error if error else "Invalid email or password")
-                else:
-                    st.sidebar.error("Please enter email and password")
+                        st.error("Please enter email and password")
 
         else:  # Sign Up
             st.sidebar.subheader("Sign Up Here")
