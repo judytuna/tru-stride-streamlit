@@ -716,14 +716,6 @@ def main():
                     st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No upload trend data yet")
-                
-                # Debug info (remove after fixing)
-                with st.expander("Debug: Upload trends data"):
-                    st.write(f"Upload trends DataFrame shape: {upload_trends.shape}")
-                    if not upload_trends.empty:
-                        st.write(upload_trends)
-                    else:
-                        st.write("Upload trends DataFrame is empty")
 
             # Detailed user table
             st.subheader("User Activity Overview")
