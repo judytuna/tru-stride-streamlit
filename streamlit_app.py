@@ -188,7 +188,13 @@ def authenticate_user(email, password):
 
                 return response.user.id, is_admin, username
     except Exception as e:
+        error_msg = str(e).lower()
         print(f"Auth error: {e}")
+
+        # Check for common unverified email errors
+        if "invalid login credentials" in error_msg or "email not confirmed" in error_msg:
+            return "email_not_verified", False, None
+
         return None, False, None
 
     return None, False, None
@@ -505,11 +511,13 @@ def main():
             if st.sidebar.button("Login"):
                 if email and password:
                     user_id, is_admin, username = authenticate_user(email, password)
-                    if user_id:
+                    if user_id and user_id != "email_not_verified":
                         st.session_state.user_id = user_id
                         st.session_state.username = username
                         st.session_state.is_admin = is_admin
                         st.rerun()
+                    elif user_id == "email_not_verified":
+                        st.sidebar.error("📧 Please check your email and click the verification link before logging in.")
                     else:
                         st.sidebar.error("Invalid email or password")
                 else:

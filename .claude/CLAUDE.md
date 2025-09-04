@@ -305,3 +305,19 @@ Auth error: Invalid login credentials
 
   The migration from SQLite to Supabase is complete! Your data will now persist through app restarts, and you have a much more robust
   authentication system.
+
+  ...then i manually changed the admin email
+
+  ⏺ Let's commit this improvement:
+
+  git add .
+  git commit -m "Improve login error message for unverified emails"
+  git push
+
+  Now when users try to log in before verifying their email, they'll see:
+
+  "📧 Please check your email and click the verification link before logging in."
+
+  Instead of the generic "Invalid email or password" message.
+
+  Much more user-friendly! The message will help users understand they need to verify their email first.
