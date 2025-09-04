@@ -822,3 +822,31 @@ The Problem
   browsers and users.
 
   ...oh wow that's a big problem lmao
+
+⏺ Perfect! Now I've fixed the session management issue. Here's what
+   the fix does:
+
+  Session Management Fix
+
+  1. Store Session: After successful login, we store the
+  supabase_session and supabase_user in Streamlit's session state
+  2. Restore Session: Every time we create a Supabase client, we
+  restore the stored session using client.auth.set_session()
+  3. Handle Expiration: If the session is invalid/expired, we clear
+   it automatically
+
+  Test the Fix
+
+  Now try the data access tests again:
+
+  1. Logout and login again as a regular user (to establish a fresh
+  session)
+  2. Run the "Test My Data Access" - you should now see:
+    - Profiles I can see: 1 (your own)
+    - Videos I can see: 1 (your own)
+    - My videos: 1 (your own)
+  3. As admin, the dashboard should work properly with the service
+  role key
+
+  The auth.uid() should now return a valid user ID instead of NULL,
+   and RLS policies should work correctly!

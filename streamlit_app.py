@@ -18,7 +18,23 @@ def init_supabase():
         st.error("Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your secrets.")
         st.stop()
 
-    return create_client(url, key)
+    client = create_client(url, key)
+    
+    # Restore session if available
+    if 'supabase_session' in st.session_state:
+        try:
+            client.auth.set_session(
+                st.session_state.supabase_session.access_token,
+                st.session_state.supabase_session.refresh_token
+            )
+        except:
+            # Session might be expired, clear it
+            if 'supabase_session' in st.session_state:
+                del st.session_state.supabase_session
+            if 'supabase_user' in st.session_state:
+                del st.session_state.supabase_user
+
+    return client
 
 # Supabase database functions
 
@@ -156,6 +172,10 @@ def authenticate_user(email, password):
         })
 
         if response.user:
+            # Store the session in Streamlit session state for persistence
+            st.session_state.supabase_session = response.session
+            st.session_state.supabase_user = response.user
+            
             # Get profile info to check admin status
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
 
