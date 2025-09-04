@@ -20,23 +20,18 @@ def init_supabase():
 
     client = create_client(url, key)
     
-    # Restore session if available
-    if 'supabase_session' in st.session_state:
+    # Restore session using stored tokens
+    if 'access_token' in st.session_state and 'refresh_token' in st.session_state:
         try:
-            # Try the newer API first
-            session_data = st.session_state.supabase_session
-            client.auth.set_session(session_data.access_token, session_data.refresh_token)
+            client.auth.set_session(
+                st.session_state.access_token, 
+                st.session_state.refresh_token
+            )
         except Exception as e:
-            # If that fails, try alternative approach or clear session
-            try:
-                # Alternative: restore auth state manually
-                client.auth._session = st.session_state.supabase_session
-            except:
-                # Session restore failed, clear it
-                if 'supabase_session' in st.session_state:
-                    del st.session_state.supabase_session
-                if 'supabase_user' in st.session_state:
-                    del st.session_state.supabase_user
+            # Clear invalid tokens
+            for key in ['access_token', 'refresh_token', 'supabase_user_id']:
+                if key in st.session_state:
+                    del st.session_state[key]
 
     return client
 
@@ -181,9 +176,10 @@ def authenticate_user(email, password):
             if not response.user.email_confirmed_at:
                 return None, False, None, "Please check your email and click the verification link before logging in."
             
-            # Store the session in Streamlit session state for persistence
-            st.session_state.supabase_session = response.session
-            st.session_state.supabase_user = response.user
+            # Store session tokens for persistence (instead of session object)
+            st.session_state.access_token = response.session.access_token
+            st.session_state.refresh_token = response.session.refresh_token  
+            st.session_state.supabase_user_id = response.user.id
             
             # Get profile info to check admin status
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
@@ -601,23 +597,31 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
-    # Check for existing Supabase session on page load  
-    if 'user_id' not in st.session_state:
+    # Check for existing session tokens on page load  
+    if 'user_id' not in st.session_state and 'supabase_user_id' in st.session_state:
         try:
             supabase = init_supabase()
-            # Try to get current session
+            # Try to get current session after restoration
             session = supabase.auth.get_session()
             
             if session and session.user:
-                # Restore user session
+                # Restore user session from tokens
                 profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
                 if profile_response.data:
                     profile = profile_response.data[0]
                     st.session_state.user_id = session.user.id
                     st.session_state.username = profile.get('username', session.user.email)
                     st.session_state.is_admin = profile.get('is_admin', False)
+            else:
+                # Clear invalid session data
+                for key in ['access_token', 'refresh_token', 'supabase_user_id']:
+                    if key in st.session_state:
+                        del st.session_state[key]
         except Exception as e:
-            pass  # If session check fails, continue with normal auth flow
+            # Clear invalid session data
+            for key in ['access_token', 'refresh_token', 'supabase_user_id']:
+                if key in st.session_state:
+                    del st.session_state[key]
 
     # Authentication
     if 'user_id' not in st.session_state:
@@ -711,8 +715,9 @@ def main():
         except:
             pass  # Continue even if Supabase sign out fails
         
-        # Clear all session state
-        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename']:
+        # Clear all session state including tokens
+        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename', 
+                   'access_token', 'refresh_token', 'supabase_user_id']:
             if key in st.session_state:
                 del st.session_state[key]
         st.rerun()

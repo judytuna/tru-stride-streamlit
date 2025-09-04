@@ -1197,3 +1197,36 @@ The Problem
 
   The current debug output actually confirms our diagnosis was
   correct and the fix should work! 🎯
+
+  ...it doesn't
+
+  ⏺ Perfect! Now I've completely redesigned the session persistence to use individual tokens instead of the
+  session object:
+
+  🔄 New Session Management Approach
+
+  During Login:
+  - Store access_token, refresh_token, supabase_user_id separately ✅
+  - These are simple strings that Streamlit can persist reliably ✅
+
+  During Page Load:
+  - Restore session using individual tokens ✅
+  - Check if session restoration worked ✅
+  - Clear invalid tokens if restoration fails ✅
+
+  During Logout:
+  - Clear all tokens and session data ✅
+
+  🧪 Test the New Session Persistence
+
+  Now try:
+
+  1. Login with any user
+  2. Verify you're logged in
+  3. Refresh the page
+  4. You should stay logged in! 🤞
+
+  The token-based approach should be much more reliable than storing the complex session object. Individual
+  tokens are simple strings that Streamlit session state handles well.
+
+  Let me know if session persistence works now!
