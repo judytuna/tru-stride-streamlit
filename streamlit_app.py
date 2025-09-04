@@ -469,8 +469,8 @@ def parse_gradio_results(analysis_text):
 # Initialize Supabase tables (run SQL in Supabase dashboard first)
 # init_supabase_tables()  # Disabled - tables created manually
 
-# Create default admin users from environment variables
-create_default_admin_users()
+# Create default admin users from environment variables (disabled - admin already created)
+# create_default_admin_users()
 
 # App configuration
 st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
