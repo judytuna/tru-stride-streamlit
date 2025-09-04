@@ -388,3 +388,37 @@ Auth error: Invalid login credentials
   within the app itself. The favicon will help users identify your
   app when they have multiple tabs open!
 
+  Your Tru-Stride app is now fully set up with:
+  - ✅ Persistent Supabase database - no more data loss
+  - ✅ Secure authentication with email verification
+  - ✅ Session persistence - stays logged in after refresh
+  - ✅ Professional branding - logo and custom theme
+  - ✅ Favicon - branded browser tab icon
+
+  The migration from SQLite to Supabase is complete and your app
+  looks great with the custom branding! Enjoy your upgraded horse
+  gait analysis app! 🐎
+
+...asking it to put the logo in social previews
+
+ This will update the social media previews to show:
+
+  📝 Title: "Tru-Stride - AI Horse Gait Analysis"📄 Description:
+  "Professional horse gait analysis using artificial intelligence.
+  Upload videos of your horse to get detailed stride analysis and
+  performance insights."🖼️ Image: Your Tru-Stride logo
+
+  Note: The image URL might need to be adjusted. Streamlit apps
+  sometimes use different paths for static assets. If the logo
+  doesn't show in previews, we can:
+
+  1. Upload the logo to a public image hosting service
+  2. Or use a different Streamlit asset path
+
+  After deployment, you can test the preview by:
+  - Sharing the link in Discord/Twitter
+  - Using a tool like https://www.opengraph.xyz/ to preview how it
+  will look
+
+  Let me know if the logo shows up in the social previews once
+  deployed!
