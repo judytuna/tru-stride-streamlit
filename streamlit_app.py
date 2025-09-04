@@ -473,6 +473,23 @@ st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
 def main():
     st.title("🐎 Tru-Stride")
 
+    # Check for existing Supabase session on page load
+    if 'user_id' not in st.session_state:
+        try:
+            supabase = init_supabase()
+            # Try to get current session
+            session = supabase.auth.get_session()
+            if session and session.user:
+                # Restore user session
+                profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
+                if profile_response.data:
+                    profile = profile_response.data[0]
+                    st.session_state.user_id = session.user.id
+                    st.session_state.username = profile.get('username', session.user.email)
+                    st.session_state.is_admin = profile.get('is_admin', False)
+        except:
+            pass  # If session check fails, continue with normal auth flow
+
     # Authentication
     if 'user_id' not in st.session_state:
         st.sidebar.header("🔐 Authentication")
