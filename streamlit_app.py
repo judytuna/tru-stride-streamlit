@@ -10,6 +10,43 @@ import os
 import json
 import re
 
+def create_default_admin_users():
+    """
+    Create default admin users if they don't exist and env vars are provided
+    """
+    conn = sqlite3.connect('horse_gait.db')
+    c = conn.cursor()
+    
+    default_users = [
+        {'username': 'admin', 'email': 'admin@example.com', 'is_admin': True},
+        {'username': 'epona01', 'email': 'epona01@example.com', 'is_admin': True}
+    ]
+    
+    for user_info in default_users:
+        username = user_info['username']
+        env_var_name = f"{username.upper()}_PASSWORD"
+        password = os.getenv(env_var_name)
+        
+        if password:
+            # Check if user already exists
+            c.execute("SELECT id FROM users WHERE username = ?", (username,))
+            if not c.fetchone():
+                # Create user
+                password_hash = hashlib.sha256(password.encode()).hexdigest()
+                c.execute("""INSERT INTO users (username, email, created_at, is_admin, password_hash) 
+                           VALUES (?, ?, ?, ?, ?)""",
+                         (username, user_info['email'], datetime.now(), 1 if user_info['is_admin'] else 0, password_hash))
+                conn.commit()
+                st.toast(f"Created admin user: {username}", icon="✅")
+            else:
+                # Update existing user's password
+                password_hash = hashlib.sha256(password.encode()).hexdigest()
+                c.execute("UPDATE users SET password_hash = ? WHERE username = ?", (password_hash, username))
+                conn.commit()
+                st.toast(f"Updated password for: {username}", icon="🔄")
+    
+    conn.close()
+
 def reset_user_password_from_env(username):
     """
     Reset a user's password using environment variables
@@ -346,6 +383,9 @@ def parse_gradio_results(analysis_text):
 
 # Initialize database
 init_db()
+
+# Create default admin users from environment variables
+create_default_admin_users()
 
 # App configuration
 st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
