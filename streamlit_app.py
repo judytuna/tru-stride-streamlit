@@ -463,8 +463,8 @@ def parse_gradio_results(analysis_text):
 # Initialize Supabase tables (run SQL in Supabase dashboard first)
 # init_supabase_tables()  # Disabled - tables created manually
 
-# Create default admin users from environment variables (temporarily disabled for debugging)
-# create_default_admin_users()
+# Create default admin users from environment variables
+create_default_admin_users()
 
 # App configuration
 st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
@@ -559,39 +559,6 @@ def main():
         # Show login/signup prompt
         st.info("👆 Please login or sign up in the sidebar to continue")
 
-        # Debug: Test Supabase connection
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Test DB Connection"):
-                try:
-                    supabase = init_supabase()
-                    response = supabase.table('profiles').select('count').execute()
-                    st.success("✅ DB connection works!")
-                    st.write(f"Result: {response}")
-                except Exception as e:
-                    st.error(f"❌ DB connection failed: {str(e)}")
-
-        with col2:
-            if st.button("Test Auth Signup"):
-                try:
-                    supabase = init_supabase()
-                    st.info("Testing auth signup...")
-
-                    # Try a test signup with a more realistic email
-                    response = supabase.auth.sign_up({
-                        "email": "thefishwadethroughblackjade@gmail.com",
-                        "password": "testpass123"
-                    })
-
-                    st.success("✅ Auth signup works!")
-                    st.write(f"Auth response: {response}")
-
-                    # Clean up - delete the test user
-                    if response.user:
-                        st.info("Test user created, please delete from Supabase dashboard")
-
-                except Exception as e:
-                    st.error(f"❌ Auth signup failed: {str(e)}")
 
         return
 
