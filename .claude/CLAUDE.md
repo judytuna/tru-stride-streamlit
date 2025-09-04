@@ -1116,3 +1116,22 @@ The Problem
   This will tell us exactly where the session persistence is
   breaking! Try logging in and let me know what error message (if
   any) appears.
+
+  ⏺ Perfect! Now when you login successfully, you should see:
+
+  1. "Login successful for [username]!"
+  2. "DEBUG: Session stored = True/False" ← This will tell us if
+  the session was saved
+  3. "Click anywhere to continue..."
+  4. "Continue to App" button
+
+  Try logging in with correct credentials now. The debug message
+  will stay visible until you click "Continue to App", so you can
+  clearly see whether the session was stored or not.
+
+  If it shows "Session stored = False", then we know the issue is
+  in the authenticate_user function and we'll see the debug error
+  message from there too.
+
+  If it shows "Session stored = True", then the session is being
+  saved but getting lost somewhere else.

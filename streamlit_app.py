@@ -668,7 +668,15 @@ def main():
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
-                            st.rerun()
+                            
+                            # Show debug info in main area before rerun
+                            st.success(f"Login successful for {username}!")
+                            st.info(f"DEBUG: Session stored = {'supabase_session' in st.session_state}")
+                            st.info("Click anywhere to continue...")
+                            
+                            # Wait for user interaction before rerun
+                            if st.button("Continue to App"):
+                                st.rerun()
                         else:
                             st.error(f"Login failed - Error: {error}")
                             st.error(f"User ID returned: {user_id}")
