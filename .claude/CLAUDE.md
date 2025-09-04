@@ -571,3 +571,30 @@ The changes I made:
 
   Try this test and let me know what numbers you see! This will
   help us determine if RLS is currently active or disabled.
+
+Perfect! Now as a regular user, you should see a new "🔍
+  Data Access Test" expander in your sidebar.
+
+  Test RLS as Regular User
+
+  1. Look in the left sidebar for the "🔍 Data Access Test" section
+  2. Click to expand it
+  3. Click "Test My Data Access"
+
+  What We Expect to See
+
+  If RLS is working correctly:
+  - Profiles I can see: Should be 1 (only your own profile)
+  - Usernames: Should only show "thefish"
+  - Videos I can see: Should only show your videos (0-1 depending
+  on what you've uploaded)
+
+  If RLS is broken:
+  - You'll see all 5 profiles and all usernames (including admin
+  accounts)
+  - You'll see all 3 videos from all users
+
+  Try the test and let me know what numbers you see! This will
+  definitively tell us if RLS is protecting regular users' data
+  access.
+

@@ -826,6 +826,37 @@ def main():
                 else:
                     st.info("No users found")
 
+    # Regular user RLS test (temporary)
+    if not is_admin:
+        with st.sidebar:
+            with st.expander("🔍 Data Access Test", expanded=False):
+                if st.button("Test My Data Access"):
+                    supabase = init_supabase()
+                    try:
+                        st.write("**Testing what data I can see...**")
+                        
+                        # Test 1: Can I see all profiles?
+                        profiles = supabase.table('profiles').select('id,username').execute()
+                        st.write(f"**Profiles I can see:** {len(profiles.data) if profiles.data else 0}")
+                        
+                        if profiles.data:
+                            usernames = [p['username'] for p in profiles.data if p.get('username')]
+                            st.write(f"**Usernames:** {usernames}")
+                        
+                        # Test 2: Can I see all videos?
+                        videos = supabase.table('videos').select('id,user_id').execute() 
+                        st.write(f"**Videos I can see:** {len(videos.data) if videos.data else 0}")
+                        
+                        # Test 3: My own data
+                        my_user_id = st.session_state.get('user_id')
+                        if my_user_id:
+                            my_videos = supabase.table('videos').select('*').eq('user_id', my_user_id).execute()
+                            st.write(f"**My videos:** {len(my_videos.data) if my_videos.data else 0}")
+                        
+                    except Exception as e:
+                        st.error(f"Access test failed: {e}")
+                        st.write("If you see permission errors, that means RLS is working!")
+
     # Video Analysis Tab
     analysis_tab = tab3 if is_admin else tab1
     with analysis_tab:
