@@ -20,10 +20,10 @@ Tru-Stride is a comprehensive web application that uses artificial intelligence 
   - Quality scores for rhythm and symmetry
 
 ### 👥 User Management
-- **Secure Authentication**: Username/password login system with password hashing
-- **User Registration**: Easy signup with email
+- **Supabase Authentication**: Secure email/password authentication with built-in email verification
+- **User Registration**: Easy signup with automatic profile creation
 - **Admin Dashboard**: User management and analytics for administrators
-- **Personal History**: Individual user video analysis history
+- **Session Persistence**: Stay logged in across page refreshes
 
 ### 📊 Analytics & Visualization
 - **Interactive Charts**: Plotly-powered visualizations
@@ -32,15 +32,17 @@ Tru-Stride is a comprehensive web application that uses artificial intelligence 
 - **Admin Analytics**: User activity and upload statistics
 
 ### 🗄️ Data Management
-- **SQLite Database**: Lightweight, reliable data storage
-- **Automatic Migrations**: Seamless database updates
-- **Video Metadata**: Comprehensive analysis result storage
+- **Supabase Database**: PostgreSQL cloud database with Row Level Security (RLS)
+- **Persistent Storage**: Data survives app restarts and deployments
+- **Real-time Sync**: Instant updates across user sessions
+- **Automatic Backups**: Built-in backup and recovery via Supabase
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.7+
 - Streamlit
+- Supabase account (free tier available)
 - Access to HuggingFace Gradio Space (judytuna/tru-stride-analyzer)
 
 ### Installation
@@ -51,32 +53,47 @@ Tru-Stride is a comprehensive web application that uses artificial intelligence 
    cd tru-stride-streamlit
    ```
 
-2. **Install dependencies**
+2. **Set up Supabase**
+   - Follow the detailed setup guide in `SUPABASE_SETUP.md`
+   - Create your Supabase project and database tables
+   - Get your project URL and API keys
+
+3. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run the application**
+4. **Configure environment variables**
+   ```bash
+   export SUPABASE_URL="https://your-project.supabase.co"
+   export SUPABASE_ANON_KEY="your-anon-key-here"
+   ```
+
+5. **Run the application**
    ```bash
    streamlit run streamlit_app.py
    ```
 
-4. **Access the app**
+6. **Access the app**
    - Open your browser to `http://localhost:8501`
-   - Sign up for a new account or login with existing credentials
+   - Sign up for a new user account to get started
 
 ## 🔧 Configuration
 
 ### Environment Variables
-You can customize the admin account using environment variables:
+Required for Supabase integration:
 
 ```bash
-export ADMIN_USERNAME="your_admin"
-export ADMIN_PASSWORD="your_secure_password"
+# Supabase credentials (required)
+export SUPABASE_URL="https://your-project.supabase.co"
+export SUPABASE_ANON_KEY="your-anon-key-here"
 ```
 
 ### Database
-The application uses SQLite database (`horse_gait.db`) which is created automatically on first run.
+The application uses Supabase PostgreSQL with:
+- **Row Level Security (RLS)**: Users can only access their own data
+- **Admin privileges**: Admins can view all user data and analytics
+- **Automatic profile creation**: User profiles created on signup via database triggers
 
 ### Streamlit Cloud
 Active at https://tru-stride.streamlit.app/ 
@@ -100,11 +117,12 @@ Active at https://tru-stride.streamlit.app/
 ## 🔬 Technical Details
 
 ### Architecture
-- **Frontend**: Streamlit web application
-- **Backend**: Python with SQLite database
+- **Frontend**: Streamlit web application with custom theming
+- **Backend**: Python with Supabase PostgreSQL database
+- **Authentication**: Supabase Auth with email verification
 - **AI Model**: HuggingFace Gradio Space integration
-- **Visualization**: Plotly for interactive charts
-- **Authentication**: SHA-256 password hashing
+- **Visualization**: Plotly for interactive charts and analytics
+- **Security**: Row Level Security (RLS) policies for data isolation
 
 ### AI Integration
 The application connects to a HuggingFace Gradio Space (`judytuna/tru-stride-analyzer`) that provides:
@@ -114,8 +132,17 @@ The application connects to a HuggingFace Gradio Space (`judytuna/tru-stride-ana
 - Detailed metric extraction
 
 ### Database Schema
-- **Users**: id, username, email, created_at, is_admin, password_hash
-- **Videos**: id, user_id, filename, upload_date, analysis_results
+
+#### Supabase Tables
+- **profiles**: id (UUID), username, is_admin, created_at
+  - Extends Supabase's built-in `auth.users` table
+  - Automatic creation via database triggers
+- **videos**: id, user_id (UUID), filename, upload_date, analysis_results (JSONB)
+
+#### Security Policies
+- Users can only access their own profiles and videos
+- Admins have read access to all data for analytics
+- Email verification required for new accounts
 
 ## 📊 Metrics Explained
 
@@ -137,12 +164,28 @@ streamlit          # Web application framework
 pandas             # Data manipulation and analysis
 plotly             # Interactive visualizations
 gradio_client      # HuggingFace Gradio integration
+supabase>=1.0.0    # Database and authentication
 ```
+
+## 🎨 Features Added
+
+### Professional Branding
+- Custom logo integration (Tru-Stride logo)
+- Themed color scheme (gold accents, neutral background)  
+- Favicon support
+- Open Graph meta tags for social media previews
+
+### Enhanced UI/UX
+- Upload trends analytics with daily breakdowns
+- Improved chart visibility with markers for single data points
+- Integer-only axes for count-based metrics
+- Session persistence across page refreshes
+- Streamlined logout functionality
 
 ## 📈 Roadmap
 
 - [ ] Advanced filtering and search capabilities
-- [ ] Export analysis reports (PDF/CSV)
+- [ ] Export analysis reports (PDF/CSV) 
 - [ ] Video comparison features
 - [ ] Mobile application support
 - [ ] Integration with additional AI models
