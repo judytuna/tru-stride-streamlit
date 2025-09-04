@@ -2,4 +2,4 @@ streamlit
 pandas
 plotly
 gradio_client
-supabase
+supabase>=1.0.0
