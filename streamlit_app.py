@@ -511,23 +511,35 @@ def main():
             new_password = st.sidebar.text_input("Choose Password", type="password", key="signup_password")
             confirm_password = st.sidebar.text_input("Confirm Password", type="password", key="confirm_password")
 
-            if st.sidebar.button("Sign Up"):
+            if st.sidebar.button("Sign Up", key="signup_button"):
                 if new_username and new_email and new_password and confirm_password:
                     if new_password != confirm_password:
                         st.sidebar.error("Passwords do not match")
                     elif "@" not in new_email or "." not in new_email:
                         st.sidebar.error("Please enter a valid email address")
+                    elif len(new_password) < 6:
+                        st.sidebar.error("Password must be at least 6 characters")
                     else:
-                        user_id, error = create_user(new_username, new_email, new_password)
-                        if user_id:
-                            # Auto-login the new user
-                            st.session_state.user_id = user_id
-                            st.session_state.username = new_username
-                            st.session_state.is_admin = False
-                            st.sidebar.success("Account created successfully! Please check your email to verify your account.")
-                            st.rerun()
+                        # Prevent double submission
+                        if 'creating_user' not in st.session_state:
+                            st.session_state.creating_user = True
+                            
+                            with st.sidebar.spinner("Creating account..."):
+                                user_id, error = create_user(new_username, new_email, new_password)
+                                
+                            if user_id:
+                                # Auto-login the new user
+                                st.session_state.user_id = user_id
+                                st.session_state.username = new_username
+                                st.session_state.is_admin = False
+                                del st.session_state.creating_user
+                                st.sidebar.success("Account created successfully!")
+                                st.rerun()
+                            else:
+                                del st.session_state.creating_user
+                                st.sidebar.error(error)
                         else:
-                            st.sidebar.error(error)
+                            st.sidebar.info("Creating account... please wait")
                 else:
                     st.sidebar.error("Please fill in all fields")
 
