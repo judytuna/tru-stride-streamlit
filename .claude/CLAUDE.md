@@ -1039,3 +1039,35 @@ The Problem
   sessions expire quickly or there's a different API approach
   needed. Let me know if session persistence works now after the
   refresh!
+
+  ...nope
+
+  ⏺ I've added detailed debugging to see what's happening with
+  session restoration. Now:
+
+  Test Session Persistence Debug
+
+  1. Login as admin (or any user)
+  2. Refresh the page
+  3. Look at the debug messages in the sidebar
+
+  The debug will show:
+  - Has stored session: Whether supabase_session is in Streamlit
+  session state
+  - Session from auth: Whether get_session() returns a valid
+  session
+  - Session user: First 8 characters of user ID if session exists
+
+  This will tell us exactly where the session persistence is
+  breaking:
+
+  Possible scenarios:
+  - Has stored session: False → Session isn't being saved during
+  login
+  - Has stored session: True, Session from auth: False → Session
+  isn't being restored to client
+  - Session from auth: True, Session user: None → Session exists
+  but no user data
+  - All true but still logged out → Profile lookup is failing
+
+  Let me know what the debug output shows when you refresh!

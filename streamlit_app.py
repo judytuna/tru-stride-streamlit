@@ -601,12 +601,19 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
-    # Check for existing Supabase session on page load
+    # Check for existing Supabase session on page load  
     if 'user_id' not in st.session_state:
+        # Debug session restoration
+        has_stored_session = 'supabase_session' in st.session_state
+        st.sidebar.write(f"Debug: Has stored session: {has_stored_session}")
+        
         try:
             supabase = init_supabase()
             # Try to get current session
             session = supabase.auth.get_session()
+            st.sidebar.write(f"Debug: Session from auth: {session is not None}")
+            st.sidebar.write(f"Debug: Session user: {session.user.id[:8] if session and session.user else 'None'}")
+            
             if session and session.user:
                 # Restore user session
                 profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
@@ -615,7 +622,13 @@ def main():
                     st.session_state.user_id = session.user.id
                     st.session_state.username = profile.get('username', session.user.email)
                     st.session_state.is_admin = profile.get('is_admin', False)
-        except:
+                    st.sidebar.success("Session restored!")
+                else:
+                    st.sidebar.warning("No profile found")
+            else:
+                st.sidebar.warning("No valid session found")
+        except Exception as e:
+            st.sidebar.error(f"Session restore failed: {str(e)}")
             pass  # If session check fails, continue with normal auth flow
 
     # Authentication
