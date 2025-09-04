@@ -23,16 +23,20 @@ def init_supabase():
     # Restore session if available
     if 'supabase_session' in st.session_state:
         try:
-            client.auth.set_session(
-                st.session_state.supabase_session.access_token,
-                st.session_state.supabase_session.refresh_token
-            )
-        except:
-            # Session might be expired, clear it
-            if 'supabase_session' in st.session_state:
-                del st.session_state.supabase_session
-            if 'supabase_user' in st.session_state:
-                del st.session_state.supabase_user
+            # Try the newer API first
+            session_data = st.session_state.supabase_session
+            client.auth.set_session(session_data.access_token, session_data.refresh_token)
+        except Exception as e:
+            # If that fails, try alternative approach or clear session
+            try:
+                # Alternative: restore auth state manually
+                client.auth._session = st.session_state.supabase_session
+            except:
+                # Session restore failed, clear it
+                if 'supabase_session' in st.session_state:
+                    del st.session_state.supabase_session
+                if 'supabase_user' in st.session_state:
+                    del st.session_state.supabase_user
 
     return client
 

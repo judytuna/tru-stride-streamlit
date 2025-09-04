@@ -1023,3 +1023,19 @@ The Problem
   Try logging in a few more times to confirm it's working
   consistently!
 
+...now login works, for both admin and normal users, however refreshing the page logs you out lol
+
+⏺ Now try logging in as thefish and then refresh the page. The
+  session should persist because:
+
+  1. Login stores session: st.session_state.supabase_session is
+  saved during login
+  2. Page load restores session: init_supabase() restores the
+  session to the client
+  3. User data restored: get_session() should now return the valid
+  session and restore user info
+
+  If it still doesn't work, the issue might be that Supabase
+  sessions expire quickly or there's a different API approach
+  needed. Let me know if session persistence works now after the
+  refresh!
