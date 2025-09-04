@@ -162,6 +162,7 @@ def get_user_stats():
 def authenticate_user(email, password):
     """
     Authenticate using Supabase Auth
+    Returns: (user_id, is_admin, username, error_message)
     """
     supabase = init_supabase()
 
@@ -172,6 +173,10 @@ def authenticate_user(email, password):
         })
 
         if response.user:
+            # Check if email is verified
+            if not response.user.email_confirmed_at:
+                return None, False, None, "Please check your email and click the verification link before logging in."
+            
             # Store the session in Streamlit session state for persistence
             st.session_state.supabase_session = response.session
             st.session_state.supabase_user = response.user
@@ -181,7 +186,7 @@ def authenticate_user(email, password):
 
             if profile_response.data:
                 profile = profile_response.data[0]
-                return response.user.id, profile.get('is_admin', False), profile.get('username', email)
+                return response.user.id, profile.get('is_admin', False), profile.get('username', email), None
             else:
                 # Create profile if it doesn't exist
                 username = response.user.user_metadata.get('username', email.split('@')[0])
@@ -193,18 +198,22 @@ def authenticate_user(email, password):
                     'is_admin': is_admin
                 }).execute()
 
-                return response.user.id, is_admin, username
+                return response.user.id, is_admin, username, None
+        else:
+            return None, False, None, "Login failed. Please check your credentials."
+            
     except Exception as e:
         error_msg = str(e).lower()
         print(f"Auth error: {e}")
 
-        # Check for common unverified email errors
-        if "invalid login credentials" in error_msg or "email not confirmed" in error_msg:
-            return "email_not_verified", False, None
-
-        return None, False, None
-
-    return None, False, None
+        if "invalid login credentials" in error_msg:
+            return None, False, None, "Invalid email or password. Please try again."
+        elif "email not confirmed" in error_msg:
+            return None, False, None, "Please check your email and click the verification link before logging in."
+        elif "too many requests" in error_msg:
+            return None, False, None, "Too many login attempts. Please wait a moment and try again."
+        else:
+            return None, False, None, f"Login error: {str(e)}"
 
 def create_user(username, email, password):
     """
@@ -619,16 +628,14 @@ def main():
 
             if st.sidebar.button("Login"):
                 if email and password:
-                    user_id, is_admin, username = authenticate_user(email, password)
-                    if user_id and user_id != "email_not_verified":
+                    user_id, is_admin, username, error = authenticate_user(email, password)
+                    if user_id:
                         st.session_state.user_id = user_id
                         st.session_state.username = username
                         st.session_state.is_admin = is_admin
                         st.rerun()
-                    elif user_id == "email_not_verified":
-                        st.sidebar.error("📧 Please check your email and click the verification link before logging in.")
                     else:
-                        st.sidebar.error("Invalid email or password")
+                        st.sidebar.error(error if error else "Invalid email or password")
                 else:
                     st.sidebar.error("Please enter email and password")
 

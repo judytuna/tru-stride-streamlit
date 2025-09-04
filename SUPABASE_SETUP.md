@@ -42,16 +42,8 @@ CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (
 CREATE POLICY "Users can read own videos" ON videos FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own videos" ON videos FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Admin policies (admins can read all data) - Fixed to avoid recursion
-CREATE POLICY "Admins can read all profiles" ON profiles FOR SELECT USING (
-    auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
-);
-CREATE POLICY "Admins can read all videos" ON videos FOR SELECT USING (
-    auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
-);
-CREATE POLICY "Admins can update profiles" ON profiles FOR UPDATE USING (
-    auth.uid() IN (SELECT id FROM profiles WHERE is_admin = TRUE)
-);
+-- NOTE: Admin policies are NOT needed - admin dashboard uses service role key to bypass RLS
+-- This prevents infinite recursion issues while maintaining security
 
 -- Function to automatically create profile when user signs up
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -78,7 +70,8 @@ CREATE TRIGGER on_auth_user_created
 1. Go to Settings → API in your Supabase dashboard
 2. Copy these values:
    - **Project URL** (looks like: `https://xxxxx.supabase.co`)
-   - **Anon public key** (the `anon` `public` key - NOT the service role key)
+   - **Anon public key** (the `anon` `public` key)
+   - **Service role key** (the `service_role` key - keep this secret!)
 
 ## 4. Update Streamlit Secrets
 
@@ -88,69 +81,51 @@ In your Streamlit Cloud app settings, go to Secrets and add:
 # Supabase credentials
 SUPABASE_URL = "https://your-project.supabase.co"
 SUPABASE_ANON_KEY = "your-anon-key-here"
-
-# Admin user password (minimum 6 characters)
-ADMIN_PASSWORD = "your_secure_admin_password123"
+SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key-here"
 ```
+
+⚠️ **Important**: The service role key bypasses ALL security policies - keep it secret!
 
 ## 5. Deploy
 
 Push your changes to GitHub. Streamlit Cloud will automatically redeploy with the new Supabase integration.
 
-## 6. First Login
+## 6. First Use
 
 After deployment:
-1. The app will automatically create the admin user if the environment variable is set
-2. Login with email instead of username:
-   - Admin: `admin@example.com` with your `ADMIN_PASSWORD`
-3. Other users (like epona01) can create their own accounts via the normal signup process
+1. **Create your first admin user** by signing up normally through the app
+2. **Manually promote to admin** in Supabase dashboard:
+   - Go to Table Editor → profiles table
+   - Find your user record
+   - Set `is_admin = true`
+3. **Other users** can create accounts via normal signup process
 
 ## Benefits of This Migration
 
 ✅ **Persistent data** - No more database loss when app restarts
-✅ **Proper authentication** - Secure password handling via Supabase Auth
-✅ **Email verification** - Built-in email verification for new users
-✅ **Scalable** - Can handle many more users than SQLite
-✅ **Backup & recovery** - Automatic backups via Supabase
+✅ **Secure authentication** - Supabase Auth with email verification
+✅ **Row Level Security** - Users can only access their own data
+✅ **Admin dashboard** - Full analytics via service role key
+✅ **Session isolation** - Independent authentication per browser
+✅ **Scalable** - Cloud PostgreSQL database with automatic backups
 
 ## Troubleshooting
 
 - **Missing tables**: Make sure you ran the SQL setup in step 2
-- **Auth errors**: Check that your `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correct
-- **Admin creation fails**: Ensure passwords are at least 6 characters long
-- **Login issues**: Use email addresses, not usernames for login
+- **Auth errors**: Check that your `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correct  
+- **Admin dashboard empty**: Ensure `SUPABASE_SERVICE_ROLE_KEY` is set correctly
+- **RLS blocking access**: Users can only see their own data - this is normal behavior
+- **Session issues**: Try logging out and back in to refresh the session
+- **Email verification**: New users must verify their email before they can login
 
-...ran the SQL, updated Streamlit secrets
+## Security Notes
 
-> done
+🔒 **Row Level Security (RLS)** is enabled:
+- Regular users can only access their own profiles and videos
+- Admin users see all data via service role key in admin dashboard
+- Cross-browser sessions are completely isolated
 
-⏺ Excellent! Now let's deploy and test the migration.
-
-  Step 5: Deploy the Changes
-
-  1. Commit and push your changes to GitHub:
-  git add .
-  git commit -m "Migrate from SQLite to Supabase for persistent storage"
-  git push
-  2. Streamlit Cloud will automatically redeploy - you should see the deployment starting in your Streamlit dashboard
-  3. Wait for deployment - it usually takes 1-2 minutes
-
-  Step 6: Test the Migration
-
-  Once deployed, test these key features:
-
-  1. Admin auto-creation: You should see a toast notification that the admin user was created
-  2. Admin login: Try logging in with:
-    - Email: admin@example.com
-    - Password: Your ADMIN_PASSWORD from secrets
-  3. User signup: Try creating a new regular user account
-  4. Video upload: Test uploading and analyzing a video
-  5. Persistence: Try refreshing the page - your login should persist
-
-  Let me know:
-  - If the deployment completes successfully
-  - If you can see the admin user creation notification
-  - If you can log in as admin
-
-  Go ahead and push the changes to GitHub!
+🔑 **Key Management**:
+- `SUPABASE_ANON_KEY`: Safe to expose, used for regular user operations
+- `SUPABASE_SERVICE_ROLE_KEY`: **Never expose** - bypasses all security policies
 
