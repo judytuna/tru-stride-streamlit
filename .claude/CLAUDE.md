@@ -1071,3 +1071,18 @@ The Problem
   - All true but still logged out → Profile lookup is failing
 
   Let me know what the debug output shows when you refresh!
+
+  ⏺ Now try logging in again and watch for the debug messages. You
+  should see:
+
+  1. During login: "Debug: Session exists before rerun: True/False"
+
+  2. After page refresh: The session debug messages we added
+  earlier
+
+  This will tell us if:
+  - The session is being saved during login but lost during rerun
+  - The session isn't being saved at all during login
+  - Something else is clearing the session
+
+  Try logging in and let me know what the debug output shows!

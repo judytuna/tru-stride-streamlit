@@ -185,6 +185,13 @@ def authenticate_user(email, password):
             st.session_state.supabase_session = response.session
             st.session_state.supabase_user = response.user
             
+            # Debug: Check if session was stored
+            print(f"Debug: Session stored? {'supabase_session' in st.session_state}")
+            print(f"Debug: Session object: {response.session is not None}")
+            if response.session:
+                print(f"Debug: Session has access_token: {hasattr(response.session, 'access_token')}")
+                print(f"Debug: Access token exists: {bool(getattr(response.session, 'access_token', None))}")
+            
             # Get profile info to check admin status
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
 
@@ -656,6 +663,9 @@ def main():
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
+                            
+                            # Debug: Check session right before rerun
+                            st.write(f"Debug: Session exists before rerun: {'supabase_session' in st.session_state}")
                             st.rerun()
                         else:
                             st.error(error if error else "Invalid email or password")
