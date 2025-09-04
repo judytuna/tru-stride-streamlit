@@ -422,3 +422,26 @@ Auth error: Invalid login credentials
 
   Let me know if the logo shows up in the social previews once
   deployed!
+
+⏺ The error shows that Supabase is disconnecting when the admin
+  dashboard tries to load user statistics. This is likely a
+  connection timeout issue in the get_user_stats() function where
+  it's making multiple database queries.
+
+  Let me fix this by adding error handling and optimizing the
+  queries:
+  ...
+The changes I made:
+
+  1. Added error handling - The function now catches connection
+  errors and shows a user-friendly message instead of crashing
+  2. Optimized queries - Instead of making multiple individual
+  queries for each user, it now makes just 2 queries total and
+  processes the data locally
+  3. Reduced data fetching - Only fetches the fields needed instead
+   of * (all fields)
+  4. Graceful fallback - Returns empty data if there's an error, so
+   the dashboard still loads
+
+  This should fix the "Server disconnected" error and make the
+  admin dashboard much more reliable!

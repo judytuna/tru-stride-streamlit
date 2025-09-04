@@ -65,46 +65,61 @@ def init_supabase_tables():
     pass  # Tables should be created via Supabase dashboard/SQL editor
 
 def get_user_stats():
-    """Get user statistics from Supabase"""
-    supabase = init_supabase()
-
-    # Total users
-    profiles_response = supabase.table('profiles').select('*').execute()
-    total_users = len(profiles_response.data) if profiles_response.data else 0
-
-    # Total videos
-    videos_response = supabase.table('videos').select('*').execute()
-    total_videos = len(videos_response.data) if videos_response.data else 0
-
-    # Videos per user - need to join profiles and videos
-    videos_per_user_data = []
-    for profile in profiles_response.data:
-        user_videos = supabase.table('videos').select('*').eq('user_id', profile['id']).execute()
-        video_count = len(user_videos.data) if user_videos.data else 0
-        videos_per_user_data.append({
-            'username': profile['username'],
-            'video_count': video_count,
-            'is_admin': profile['is_admin']
-        })
-
-    videos_per_user = pd.DataFrame(videos_per_user_data) if videos_per_user_data else pd.DataFrame()
-
-    # Upload trends (last 30 days)
-    upload_trends_data = []
-    if videos_response.data:
-        from collections import defaultdict
-        date_counts = defaultdict(int)
-        for video in videos_response.data:
-            if video['upload_date']:
-                date_str = video['upload_date'][:10]
-                date_counts[date_str] += 1
-
-        upload_trends_data = [{'date': date, 'uploads': count}
-                             for date, count in sorted(date_counts.items(), reverse=True)[:30]]
-
-    upload_trends = pd.DataFrame(upload_trends_data)
-
-    return total_users, total_videos, videos_per_user, upload_trends
+    """Get user statistics from Supabase with error handling"""
+    try:
+        supabase = init_supabase()
+        
+        # Total users - just get essential fields
+        profiles_response = supabase.table('profiles').select('id,username,is_admin').execute()
+        total_users = len(profiles_response.data) if profiles_response.data else 0
+        
+        # Total videos - just get essential fields
+        videos_response = supabase.table('videos').select('id,user_id,upload_date').execute()
+        total_videos = len(videos_response.data) if videos_response.data else 0
+        
+        # Videos per user - optimize by using the data we already have
+        videos_per_user_data = []
+        video_counts = {}
+        
+        # Count videos by user_id
+        if videos_response.data:
+            for video in videos_response.data:
+                user_id = video['user_id']
+                video_counts[user_id] = video_counts.get(user_id, 0) + 1
+        
+        # Match with profiles
+        if profiles_response.data:
+            for profile in profiles_response.data:
+                video_count = video_counts.get(profile['id'], 0)
+                videos_per_user_data.append({
+                    'username': profile['username'],
+                    'video_count': video_count,
+                    'is_admin': profile['is_admin']
+                })
+        
+        videos_per_user = pd.DataFrame(videos_per_user_data) if videos_per_user_data else pd.DataFrame()
+        
+        # Upload trends (last 30 days)
+        upload_trends_data = []
+        if videos_response.data:
+            from collections import defaultdict
+            date_counts = defaultdict(int)
+            for video in videos_response.data:
+                if video.get('upload_date'):
+                    date_str = video['upload_date'][:10]
+                    date_counts[date_str] += 1
+            
+            upload_trends_data = [{'date': date, 'uploads': count}
+                                 for date, count in sorted(date_counts.items(), reverse=True)[:30]]
+        
+        upload_trends = pd.DataFrame(upload_trends_data)
+        
+        return total_users, total_videos, videos_per_user, upload_trends
+        
+    except Exception as e:
+        st.error(f"Error loading dashboard stats: {str(e)}")
+        # Return empty data if there's an error
+        return 0, 0, pd.DataFrame(), pd.DataFrame()
 
 def authenticate_user(email, password):
     """
