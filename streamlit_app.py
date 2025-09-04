@@ -213,22 +213,18 @@ def create_user(username, email, password):
         })
         
         if response.user:
-            # Create profile record
-            supabase.table('profiles').insert({
-                'id': response.user.id,
-                'username': username,
-                'is_admin': False
-            }).execute()
-            
+            # Don't manually create profile - the trigger should handle it
+            # But let's verify it worked
             return response.user.id, None
         else:
-            return None, "Failed to create account"
+            return None, "Failed to create account - no user returned"
             
     except Exception as e:
         error_msg = str(e)
+        print(f"User creation error: {error_msg}")  # Debug logging
         if "already registered" in error_msg or "already exists" in error_msg:
             return None, "Email already exists"
-        return None, f"Error creating account: {error_msg}"
+        return None, f"Error: {error_msg}"
 
 def save_analysis(user_id, filename, analysis_results):
     """Save video analysis results to Supabase"""
