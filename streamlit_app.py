@@ -29,7 +29,7 @@ def create_default_admin_users():
     supabase = init_supabase()
 
     default_users = [
-        {'email': 'admin@example.com', 'username': 'admin', 'is_admin': True}
+        {'email': 'judytuna+admin@gmail.com', 'username': 'admin', 'is_admin': True}
     ]
 
     for user_info in default_users:
