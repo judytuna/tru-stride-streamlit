@@ -423,8 +423,73 @@ def parse_gradio_results(analysis_text):
 # App configuration
 st.set_page_config(page_title="Tru-Stride", page_icon="🐎", layout="wide")
 
+# Custom CSS for logo colors and styling
+st.markdown("""
+<style>
+    /* Custom color scheme based on logo */
+    :root {
+        --logo-background: #f5f3f0;  /* Light beige from logo background */
+        --logo-foreground: #d4af37;  /* Gold color from logo design */
+        --logo-accent: #b8860b;      /* Darker gold for accents */
+    }
+    
+    /* Main background */
+    .main .block-container {
+        background-color: var(--logo-background);
+        padding-top: 2rem;
+    }
+    
+    /* Sidebar styling */
+    .css-1d391kg {
+        background-color: var(--logo-background);
+    }
+    
+    /* Header styling */
+    h1 {
+        color: var(--logo-accent) !important;
+        text-align: center;
+        font-weight: 700;
+    }
+    
+    /* Accent colors for buttons and elements */
+    .stButton > button {
+        background-color: var(--logo-foreground);
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+    
+    .stButton > button:hover {
+        background-color: var(--logo-accent);
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: var(--logo-background);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: var(--logo-accent);
+    }
+    
+    /* Success/info messages */
+    .stSuccess {
+        background-color: rgba(212, 175, 55, 0.1);
+        border-left: 4px solid var(--logo-foreground);
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Main app
 def main():
+    # Add logo to sidebar
+    try:
+        with st.sidebar:
+            st.image("assets/tru-stride-logo.png", width=200)
+            st.markdown("---")  # Divider line
+    except:
+        pass  # If logo file not found, continue without it
+    
     st.title("🐎 Tru-Stride")
 
     # Check for existing Supabase session on page load
