@@ -520,8 +520,13 @@ def main():
                         if 'creating_user' not in st.session_state:
                             st.session_state.creating_user = True
                             
-                            with st.spinner("Creating account..."):
-                                user_id, error = create_user(new_username, new_email, new_password)
+                            try:
+                                with st.spinner("Creating account..."):
+                                    user_id, error = create_user(new_username, new_email, new_password)
+                            except Exception as e:
+                                del st.session_state.creating_user
+                                st.sidebar.error(f"Connection error: {str(e)}")
+                                st.stop()
                                 
                             if user_id:
                                 # Don't auto-login, just show success message
@@ -538,6 +543,18 @@ def main():
 
         # Show login/signup prompt
         st.info("👆 Please login or sign up in the sidebar to continue")
+        
+        # Debug: Test Supabase connection
+        if st.button("Test Supabase Connection"):
+            try:
+                supabase = init_supabase()
+                # Try a simple query
+                response = supabase.table('profiles').select('count').execute()
+                st.success("✅ Supabase connection works!")
+                st.write(f"Connection test result: {response}")
+            except Exception as e:
+                st.error(f"❌ Supabase connection failed: {str(e)}")
+        
         return
 
     # Sidebar navigation
