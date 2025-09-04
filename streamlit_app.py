@@ -232,32 +232,45 @@ def get_user_videos(user_id):
         return pd.DataFrame()
 
 def get_all_users():
-    """Get all users with video counts from Supabase"""
-    supabase = init_supabase()
+    """Get all users with video counts from Supabase with error handling"""
+    try:
+        supabase = init_supabase()
 
-    # Get all profiles
-    profiles_response = supabase.table('profiles').select('*').order('created_at', desc=True).execute()
+        # Get all profiles with just the fields we need
+        profiles_response = supabase.table('profiles').select('id,username,created_at,is_admin').order('created_at', desc=True).execute()
 
-    if not profiles_response.data:
+        if not profiles_response.data:
+            return pd.DataFrame()
+
+        # Get all videos at once instead of individual queries
+        videos_response = supabase.table('videos').select('id,user_id').execute()
+        
+        # Count videos by user_id
+        video_counts = {}
+        if videos_response.data:
+            for video in videos_response.data:
+                user_id = video['user_id']
+                video_counts[user_id] = video_counts.get(user_id, 0) + 1
+
+        # Build user data with video counts
+        users_data = []
+        for profile in profiles_response.data:
+            video_count = video_counts.get(profile['id'], 0)
+            
+            users_data.append({
+                'id': profile['id'],
+                'username': profile['username'],
+                'email': f"{profile['username']}@example.com",  # Placeholder
+                'created_at': profile['created_at'],
+                'is_admin': profile['is_admin'],
+                'video_count': video_count
+            })
+
+        return pd.DataFrame(users_data)
+        
+    except Exception as e:
+        st.error(f"Error loading users: {str(e)}")
         return pd.DataFrame()
-
-    # Get video counts for each user
-    users_data = []
-    for profile in profiles_response.data:
-        videos_response = supabase.table('videos').select('*').eq('user_id', profile['id']).execute()
-        video_count = len(videos_response.data) if videos_response.data else 0
-
-        # Get email from auth.users (this requires service role key in production)
-        users_data.append({
-            'id': profile['id'],
-            'username': profile['username'],
-            'email': f"{profile['username']}@example.com",  # Placeholder since we can't access auth.users with anon key
-            'created_at': profile['created_at'],
-            'is_admin': profile['is_admin'],
-            'video_count': video_count
-        })
-
-    return pd.DataFrame(users_data)
 
 def toggle_admin_status(user_id, make_admin):
     """Toggle admin status for a user in Supabase"""

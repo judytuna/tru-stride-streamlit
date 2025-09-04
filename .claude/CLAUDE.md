@@ -489,3 +489,23 @@ The changes I made:
   - ✅ Clears any analysis results that were stored
 
   The logout button should work as expected now!
+
+  ...errors in the management window oh no
+
+  The improvements I made to get_all_users():
+
+  1. Error handling - Catches connection errors and shows a
+  user-friendly message
+  2. Optimized queries - Makes only 2 queries instead of N+1
+  queries (one per user)
+  3. Reduced data fetching - Only selects the fields needed instead
+   of *
+  4. Graceful fallback - Returns empty DataFrame if there's an
+  error
+
+  This should fix the connection timeout error in the User
+  Management tab. The admin dashboard should now be much more
+  stable and not crash when there are Supabase connection issues.
+
+  Try logging back in and accessing the User Management tab - it
+  should work without the "Server disconnected" error now!
