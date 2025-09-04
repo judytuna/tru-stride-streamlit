@@ -677,6 +677,37 @@ def main():
         with tab1:
             st.header("Admin Dashboard")
 
+            # RLS Status Check (temporary debug section)
+            with st.expander("🔐 RLS Status Check", expanded=False):
+                if st.button("Check RLS Status"):
+                    supabase = init_supabase()
+                    try:
+                        st.write("**Testing database access patterns...**")
+                        
+                        # Test 1: Raw table queries (should show all data for admin)
+                        profiles = supabase.table('profiles').select('id,username,is_admin').execute()
+                        videos = supabase.table('videos').select('id,user_id').execute()
+                        
+                        st.write(f"**Raw profiles query:** {len(profiles.data) if profiles.data else 0} rows")  
+                        st.write(f"**Raw videos query:** {len(videos.data) if videos.data else 0} rows")
+                        
+                        # Test 2: Show some data details
+                        if profiles.data:
+                            admin_users = [p for p in profiles.data if p.get('is_admin')]
+                            regular_users = [p for p in profiles.data if not p.get('is_admin')]
+                            st.write(f"**Admin users:** {len(admin_users)}")
+                            st.write(f"**Regular users:** {len(regular_users)}")
+                            
+                        # Test 3: Check if we can access a specific user's data
+                        if profiles.data and len(profiles.data) > 1:
+                            test_user_id = profiles.data[1]['id']  # Get a non-admin user
+                            user_videos = supabase.table('videos').select('*').eq('user_id', test_user_id).execute()
+                            st.write(f"**Videos for user {test_user_id}:** {len(user_videos.data) if user_videos.data else 0}")
+                            
+                    except Exception as e:
+                        st.error(f"RLS check failed: {e}")
+                        st.write("This might indicate RLS is working and blocking access")
+            
             # Get stats
             total_users, total_videos, videos_per_user, upload_trends = get_user_stats()
 

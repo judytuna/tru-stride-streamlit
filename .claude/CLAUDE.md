@@ -530,3 +530,44 @@ The changes I made:
 
   Check the debug section and let me know what it shows - then I
   can fix the underlying issue!
+
+  ...updated the readme, it talked about RLS, which reminded me, i don't think we turned it back on lol
+
+
+⏺ Perfect! I've added a temporary RLS diagnostic tool to your admin
+   dashboard. Here's how to use it:
+
+  How to Check RLS Status
+
+  1. Deploy the app (or run locally)
+  2. Log in as admin
+  3. Go to Admin Dashboard tab
+  4. Click the "🔐 RLS Status Check" expander
+  5. Click "Check RLS Status" button
+
+  What the Test Shows
+
+  The diagnostic will reveal:
+
+  - Raw query counts: How many profiles/videos your admin account
+  can see
+  - User breakdown: Number of admin vs regular users
+  - Cross-user access: Whether admin can see other users' data
+
+  What Results Mean
+
+  If RLS is DISABLED:
+  - You'll see ALL profiles and videos from all users
+  - Numbers will match your total user/video counts
+
+  If RLS is ENABLED:
+  - As admin, you should still see all data (due to admin policies)
+  - But the queries will be going through RLS policy checks
+
+  If RLS is BLOCKING:
+  - You'll get errors or empty results
+  - This would indicate RLS is enabled but admin policies aren't
+  working
+
+  Try this test and let me know what numbers you see! This will
+  help us determine if RLS is currently active or disabled.
