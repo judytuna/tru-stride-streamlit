@@ -1631,3 +1631,17 @@ The Problem
   will be able to upload videos during analysis and view them later in the "My Videos" dashboard.
 
   The storage setup is now documented and ready to deploy. All the code implementation is complete! 🎉
+
+...tried it and got error
+...Failed to upload video: Header value must be str or bytes, not <class 'bool'>
+...⚠️ Analysis saved but video upload failed
+...✅ Analysis complete!
+
+⏺ Perfect! I've fixed the issue. The problem was that the Supabase Storage API expects 'upsert': 'true' as a
+  string, not a boolean True.
+
+  The error "Header value must be str or bytes, not <class 'bool'>" was occurring because the boolean True was
+  being passed as an HTTP header value, which must be a string.
+
+  Try uploading a video again - it should now work properly! The video will be uploaded to your Supabase Storage
+   and you'll be able to view it in the "My Videos" section.

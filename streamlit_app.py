@@ -24,7 +24,7 @@ def upload_video_to_storage(uploaded_file, user_id):
             file=uploaded_file.getvalue(),
             file_options={
                 'content-type': uploaded_file.type,
-                'upsert': True  # Overwrite if exists
+                'upsert': 'true'  # String instead of boolean
             }
         )
         
