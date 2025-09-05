@@ -1265,3 +1265,17 @@ The Problem
 
   Try logging in and let me know what error message appears (or if you see the "Login successful! Tokens saved:
   True" message this time).
+
+
+⏺ Perfect! Now try logging in again. If the session/token storage is failing, you should see one of these DEBUG
+  error messages:
+
+  - "DEBUG: No session object in authentication response"
+  - "DEBUG: Failed to store tokens: [error]"
+
+  If you DON'T see any error messages and login succeeds, then the tokens are being stored successfully and the
+  issue is elsewhere.
+
+  After login, immediately check if you can see: "Login successful! Tokens saved: True"
+
+  This will tell us definitively whether the tokens are being stored during login or not!

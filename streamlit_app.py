@@ -176,26 +176,13 @@ def authenticate_user(email, password):
             if not response.user.email_confirmed_at:
                 return None, False, None, "Please check your email and click the verification link before logging in."
             
-            # Store session tokens for persistence (instead of session object)
-            try:
-                if response.session:
-                    st.session_state.access_token = response.session.access_token
-                    st.session_state.refresh_token = response.session.refresh_token  
-                    st.session_state.supabase_user_id = response.user.id
-                    print(f"DEBUG: Tokens stored successfully - access: {bool(response.session.access_token)}")
-                else:
-                    print("DEBUG: No session in response")
-                    return None, False, None, "DEBUG: No session object in authentication response"
-            except Exception as e:
-                print(f"DEBUG: Token storage failed: {str(e)}")
-                return None, False, None, f"DEBUG: Failed to store tokens: {str(e)}"
-            
-            # Get profile info to check admin status
+            # Get profile info to check admin status first
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
 
             if profile_response.data:
                 profile = profile_response.data[0]
-                return response.user.id, profile.get('is_admin', False), profile.get('username', email), None
+                username = profile.get('username', email)
+                is_admin = profile.get('is_admin', False)
             else:
                 # Create profile if it doesn't exist
                 username = response.user.user_metadata.get('username', email.split('@')[0])
@@ -207,7 +194,18 @@ def authenticate_user(email, password):
                     'is_admin': is_admin
                 }).execute()
 
-                return response.user.id, is_admin, username, None
+            # Store session tokens for persistence (after getting profile data)
+            try:
+                if response.session:
+                    st.session_state.access_token = response.session.access_token
+                    st.session_state.refresh_token = response.session.refresh_token  
+                    st.session_state.supabase_user_id = response.user.id
+                    # Return success with proper user data
+                    return response.user.id, is_admin, username, None
+                else:
+                    return None, False, None, "DEBUG: No session object in authentication response"
+            except Exception as e:
+                return None, False, None, f"DEBUG: Failed to store tokens: {str(e)}"
         else:
             return None, False, None, "Login failed. Please check your credentials."
             
