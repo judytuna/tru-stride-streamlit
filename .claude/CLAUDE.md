@@ -1507,3 +1507,95 @@ The Problem
 
   This is the proper way to handle authentication with RLS - each user gets their own authenticated session
   without compromising security by using admin privileges.
+
+...asked it for what i thought would be good for video storage and playback
+
+⏺ Great question! For video storage, you have several options. Let me break down the recommendations:
+
+  🎯 Best Options for Video Storage
+
+  1. Supabase Storage (Recommended)
+
+  ✅ Pros:
+  - Built into your existing Supabase setup
+  - Integrates seamlessly with RLS (users only see their videos)
+  - Good performance and CDN
+  - Simple to implement
+  - Cost-effective for moderate usage
+
+  ❌ Cons:
+  - More expensive for very large files/high volume
+  - Limited to Supabase ecosystem
+
+  2. AWS S3 + CloudFront
+
+  ✅ Pros:
+  - Industry standard, very scalable
+  - Cheapest for large volumes
+  - Excellent performance with CDN
+
+  ❌ Cons:
+  - More complex setup
+  - Additional service to manage
+  - Need to handle authentication separately
+
+  3. Other Options
+
+  - Cloudinary: Great for video processing/optimization
+  - Mux: Specialized video hosting with analytics
+  - Vimeo/YouTube: If public videos are okay
+
+  💡 My Recommendation: Supabase Storage
+
+  For your use case, I'd recommend Supabase Storage because:
+
+  1. Simple integration with your existing auth/RLS
+  2. Perfect for horse gait analysis videos (typically short clips)
+  3. Built-in security - users only access their own videos
+  4. Easy to implement - just a few functions to add
+
+  🛠️ Implementation Plan
+
+  Would you like me to implement Supabase Storage? Here's what I'd add:
+
+  1. Upload function - Store videos in Supabase Storage buckets
+  2. RLS policies - Ensure users only see their videos
+  3. Playback component - HTML5 video player in "My Videos"
+  4. File management - Delete old videos, handle errors
+
+  The implementation would be:
+  - Secure (RLS protected)
+  - Simple (few lines of code)
+  - Cost-effective for your expected usage
+
+  Should I go ahead and implement Supabase Storage for video playback?
+
+...yes lol
+
+⏺ Perfect! I've successfully completed the video playback implementation for the "My Videos" dashboard. The
+  video storage and playback functionality is now fully integrated into the Streamlit application.
+
+  What I've implemented:
+
+  1. ✅ Video Storage Functions - Added upload_video_to_storage, get_video_url, and delete_video_from_storage
+  functions
+  2. ✅ Database Integration - Updated save_analysis to store file_path and get_user_videos to return file paths
+  3. ✅ Upload Workflow - Modified the video analysis process to upload videos to Supabase Storage
+  4. ✅ Video Playback - Added video player to the "My Videos" dashboard that displays stored videos using
+  secure signed URLs
+
+  Key Features:
+  - Videos are stored in user-specific folders (user_id/filename.mp4) for organization and security
+  - Secure video playback using Supabase signed URLs (valid for 1 hour)
+  - Graceful handling of videos uploaded before storage was implemented
+  - Error handling for video access issues
+
+  The only remaining task is to configure the RLS policies for video storage in your Supabase dashboard. You'll
+  need to:
+
+  1. Create a "videos" storage bucket in your Supabase dashboard
+  2. Set up RLS policies to ensure users can only access their own videos
+  3. Configure the bucket permissions for public access with RLS enforcement
+
+  The application is now ready to store and playback videos once the Supabase Storage bucket is properly
+  configured!

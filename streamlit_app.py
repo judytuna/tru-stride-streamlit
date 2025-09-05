@@ -8,6 +8,65 @@ import os
 import json
 import re
 from supabase import create_client, Client
+# Video storage functions for Supabase Storage
+
+def upload_video_to_storage(uploaded_file, user_id):
+    """Upload video file to Supabase Storage"""
+    try:
+        supabase = init_supabase()
+        
+        # Create file path: user_id/filename
+        file_path = f"{user_id}/{uploaded_file.name}"
+        
+        # Upload file to storage
+        result = supabase.storage.from_('videos').upload(
+            path=file_path,
+            file=uploaded_file.getvalue(),
+            file_options={
+                'content-type': uploaded_file.type,
+                'upsert': True  # Overwrite if exists
+            }
+        )
+        
+        if result:
+            return file_path
+        return None
+        
+    except Exception as e:
+        st.error(f"Failed to upload video: {str(e)}")
+        return None
+
+def get_video_url(file_path):
+    """Get signed URL for video playback"""
+    try:
+        supabase = init_supabase()
+        
+        # Get signed URL (expires in 1 hour)
+        result = supabase.storage.from_('videos').create_signed_url(
+            path=file_path,
+            expires_in=3600  # 1 hour
+        )
+        
+        if result:
+            return result['signedURL']
+        return None
+        
+    except Exception as e:
+        st.error(f"Failed to get video URL: {str(e)}")
+        return None
+
+def delete_video_from_storage(file_path):
+    """Delete video file from Supabase Storage"""
+    try:
+        supabase = init_supabase()
+        
+        result = supabase.storage.from_('videos').remove([file_path])
+        return bool(result)
+        
+    except Exception as e:
+        st.error(f"Failed to delete video: {str(e)}")
+        return False
+
 # Simplified session management - let Supabase handle persistence
 
 # Initialize Supabase client (removed cache to fix cross-browser session sharing)
@@ -249,8 +308,8 @@ def create_user(username, email, password):
             return None, "Email already exists"
         return None, f"Error: {error_msg}"
 
-def save_analysis(user_id, filename, analysis_results):
-    """Save video analysis results to Supabase"""
+def save_analysis(user_id, filename, analysis_results, file_path=None):
+    """Save video analysis results to Supabase with optional video file path"""
     supabase = init_supabase()
 
     # Convert analysis_results to JSON if it's a string
@@ -260,11 +319,17 @@ def save_analysis(user_id, filename, analysis_results):
         except:
             analysis_results = {"raw": analysis_results}
 
-    supabase.table('videos').insert({
+    data = {
         'user_id': user_id,
         'filename': filename,
         'analysis_results': analysis_results
-    }).execute()
+    }
+    
+    # Add file path if video was uploaded to storage
+    if file_path:
+        data['file_path'] = file_path
+
+    supabase.table('videos').insert(data).execute()
 
 def get_user_videos(user_id):
     """Get videos for a specific user from Supabase using properly authenticated client"""
@@ -279,6 +344,7 @@ def get_user_videos(user_id):
             videos_data.append({
                 'filename': video['filename'],
                 'upload_date': video['upload_date'],
+                'file_path': video.get('file_path'),  # Include file path for video playback
                 'analysis_results': json.dumps(video['analysis_results']) if isinstance(video['analysis_results'], dict) else str(video['analysis_results'])
             })
         return pd.DataFrame(videos_data)
@@ -876,13 +942,23 @@ def main():
                         st.error(f"Analysis failed: {results['error']}")
                         st.info("💡 Tip: Make sure your video is clear and shows the horse's full body in motion")
                     else:
-                        # Save to database
+                        # Upload video to Supabase Storage
+                        with st.spinner("Uploading video..."):
+                            file_path = upload_video_to_storage(uploaded_file, st.session_state.user_id)
+                        
+                        # Save to database with video file path
                         save_analysis(st.session_state.user_id,
                                     uploaded_file.name,
-                                    str(results))
+                                    str(results),
+                                    file_path)
                         
                         # Store results in session state so they persist
                         st.session_state.analysis_results = results
+                        
+                        if file_path:
+                            st.success("✅ Video uploaded and analysis saved!")
+                        else:
+                            st.warning("⚠️ Analysis saved but video upload failed")
                         st.session_state.analysis_filename = uploaded_file.name
 
         # Display results if they exist in session state
@@ -977,11 +1053,26 @@ def main():
 
             for idx, video in user_videos.iterrows():
                 with st.expander(f"📹 {video['filename']} - {video['upload_date'][:16]}"):
+                    
+                    # Video playback section
+                    if video.get('file_path'):
+                        try:
+                            video_url = get_video_url(video['file_path'])
+                            if video_url:
+                                st.subheader("🎬 Video Playback")
+                                st.video(video_url)
+                            else:
+                                st.warning("Video file not accessible")
+                        except Exception as e:
+                            st.error(f"Error loading video: {str(e)}")
+                    else:
+                        st.info("Video file not stored (uploaded before video storage was implemented)")
 
                     # Parse results (in real app, store as JSON)
                     try:
                         results = eval(video['analysis_results'])  # Don't use eval in production!
 
+                        st.subheader("📊 Analysis Results")
                         col1, col2 = st.columns(2)
                         with col1:
                             st.write("**Results:**")
