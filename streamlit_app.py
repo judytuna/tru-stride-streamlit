@@ -595,29 +595,8 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
-    # Simple approach: just check if Supabase has an active session
-    if 'user_id' not in st.session_state:
-        try:
-            supabase = init_supabase()
-            session = supabase.auth.get_session()
-            
-            st.sidebar.write(f"🔍 Supabase session exists: {session is not None}")
-            
-            if session and session.user:
-                # Restore user from Supabase session
-                profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
-                if profile_response.data:
-                    profile = profile_response.data[0]
-                    st.session_state.user_id = session.user.id
-                    st.session_state.username = profile.get('username', session.user.email)
-                    st.session_state.is_admin = profile.get('is_admin', False)
-                    st.sidebar.success("✅ Session restored from Supabase!")
-                else:
-                    st.sidebar.error("❌ No profile found")
-            else:
-                st.sidebar.write("🔍 No active Supabase session")
-        except Exception as e:
-            st.sidebar.error(f"❌ Session check error: {str(e)}")
+    # Note: Session persistence across page refreshes is not supported due to 
+    # Streamlit's session state limitations. Users need to login after each refresh.
 
     # Authentication
     if 'user_id' not in st.session_state:
@@ -645,8 +624,7 @@ def main():
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
                             
-                            st.success(f"Login successful for {username}!")
-                            st.info("Refresh the page to continue")
+                            st.rerun()
                         else:
                             st.error(f"Login failed - Error: {error}")
                             st.error(f"User ID returned: {user_id}")
