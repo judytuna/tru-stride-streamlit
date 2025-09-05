@@ -8,6 +8,7 @@ import os
 import json
 import re
 from supabase import create_client, Client
+import extra_streamlit_components as stx
 
 # Initialize Supabase client (removed cache to fix cross-browser session sharing)
 def init_supabase():
@@ -194,12 +195,22 @@ def authenticate_user(email, password):
                     'is_admin': is_admin
                 }).execute()
 
-            # Store session tokens for persistence (after getting profile data)
+            # Store session tokens in cookies for persistence across page refreshes
             try:
                 if response.session:
+                    # Get cookie manager
+                    cookie_manager = stx.CookieManager()
+                    
+                    # Store tokens in cookies (expires in 7 days)
+                    cookie_manager.set('sb_access_token', response.session.access_token, expires_at=datetime.now() + pd.Timedelta(days=7))
+                    cookie_manager.set('sb_refresh_token', response.session.refresh_token, expires_at=datetime.now() + pd.Timedelta(days=7))
+                    cookie_manager.set('sb_user_id', response.user.id, expires_at=datetime.now() + pd.Timedelta(days=7))
+                    
+                    # Also store in session state for current session
                     st.session_state.access_token = response.session.access_token
                     st.session_state.refresh_token = response.session.refresh_token  
                     st.session_state.supabase_user_id = response.user.id
+                    
                     # Return success with proper user data
                     return response.user.id, is_admin, username, None
                 else:
@@ -604,52 +615,52 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
-    # Debug: ALWAYS show token status on page load
-    has_access = 'access_token' in st.session_state
-    has_refresh = 'refresh_token' in st.session_state  
-    has_user_id = 'supabase_user_id' in st.session_state
-    is_logged_in = 'user_id' in st.session_state
-    
-    st.sidebar.write(f"🔍 Page load - Logged in: {is_logged_in}")
-    st.sidebar.write(f"🔍 Tokens: access={has_access}, refresh={has_refresh}, user_id={has_user_id}")
-
-    # Check for existing session tokens on page load  
+    # Check for existing session - first from cookies, then from session state
     if 'user_id' not in st.session_state:
-        
-        if has_access and has_refresh and has_user_id:
-            try:
+        try:
+            cookie_manager = stx.CookieManager()
+            
+            # Try to get tokens from cookies first
+            cookie_access = cookie_manager.get('sb_access_token')
+            cookie_refresh = cookie_manager.get('sb_refresh_token')
+            cookie_user_id = cookie_manager.get('sb_user_id')
+            
+            st.sidebar.write(f"🔍 Cookies: access={bool(cookie_access)}, refresh={bool(cookie_refresh)}, user_id={bool(cookie_user_id)}")
+            
+            if cookie_access and cookie_refresh and cookie_user_id:
+                # Restore tokens to session state from cookies
+                st.session_state.access_token = cookie_access
+                st.session_state.refresh_token = cookie_refresh
+                st.session_state.supabase_user_id = cookie_user_id
+                
+                # Try to restore session
                 supabase = init_supabase()
-                # Try to get current session after restoration
                 session = supabase.auth.get_session()
                 
-                st.sidebar.write(f"🔍 Session after init: {session is not None}")
-                st.sidebar.write(f"🔍 User from session: {session.user.id[:8] if session and session.user else 'None'}")
+                st.sidebar.write(f"🔍 Session restored from cookies: {session is not None}")
                 
                 if session and session.user:
-                    # Restore user session from tokens
+                    # Restore user session from cookies
                     profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
                     if profile_response.data:
                         profile = profile_response.data[0]
                         st.session_state.user_id = session.user.id
                         st.session_state.username = profile.get('username', session.user.email)
                         st.session_state.is_admin = profile.get('is_admin', False)
-                        st.sidebar.success("✅ Session restored!")
+                        st.sidebar.success("✅ Session restored from cookies!")
                     else:
                         st.sidebar.error("❌ No profile found")
                 else:
-                    st.sidebar.error("❌ Session restore failed")
-                    # Clear invalid session data
-                    for key in ['access_token', 'refresh_token', 'supabase_user_id']:
-                        if key in st.session_state:
-                            del st.session_state[key]
-            except Exception as e:
-                st.sidebar.error(f"❌ Exception: {str(e)}")
-                # Clear invalid session data
-                for key in ['access_token', 'refresh_token', 'supabase_user_id']:
-                    if key in st.session_state:
-                        del st.session_state[key]
-        else:
-            st.sidebar.write("🔍 No complete token set found")
+                    st.sidebar.error("❌ Cookie session restore failed")
+                    # Clear invalid cookies
+                    cookie_manager.delete('sb_access_token')
+                    cookie_manager.delete('sb_refresh_token')
+                    cookie_manager.delete('sb_user_id')
+            else:
+                st.sidebar.write("🔍 No valid cookies found")
+                
+        except Exception as e:
+            st.sidebar.error(f"❌ Cookie restore error: {str(e)}")
 
     # Authentication
     if 'user_id' not in st.session_state:
@@ -756,6 +767,15 @@ def main():
                    'access_token', 'refresh_token', 'supabase_user_id']:
             if key in st.session_state:
                 del st.session_state[key]
+        
+        # Clear cookies as well
+        try:
+            cookie_manager = stx.CookieManager()
+            cookie_manager.delete('sb_access_token')
+            cookie_manager.delete('sb_refresh_token')  
+            cookie_manager.delete('sb_user_id')
+        except:
+            pass
         st.rerun()
 
     # Check admin status from database

@@ -3,3 +3,4 @@ pandas
 plotly
 gradio_client
 supabase>=1.0.0
+extra-streamlit-components
