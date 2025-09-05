@@ -604,14 +604,17 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
+    # Debug: ALWAYS show token status on page load
+    has_access = 'access_token' in st.session_state
+    has_refresh = 'refresh_token' in st.session_state  
+    has_user_id = 'supabase_user_id' in st.session_state
+    is_logged_in = 'user_id' in st.session_state
+    
+    st.sidebar.write(f"🔍 Page load - Logged in: {is_logged_in}")
+    st.sidebar.write(f"🔍 Tokens: access={has_access}, refresh={has_refresh}, user_id={has_user_id}")
+
     # Check for existing session tokens on page load  
     if 'user_id' not in st.session_state:
-        # Debug: Check what tokens we have
-        has_access = 'access_token' in st.session_state
-        has_refresh = 'refresh_token' in st.session_state  
-        has_user_id = 'supabase_user_id' in st.session_state
-        
-        st.sidebar.write(f"🔍 Debug tokens: access={has_access}, refresh={has_refresh}, user_id={has_user_id}")
         
         if has_access and has_refresh and has_user_id:
             try:
@@ -681,10 +684,7 @@ def main():
                             
                             st.success(f"Login successful for {username}!")
                             st.info(f"🔍 Tokens saved - access: {has_access}, refresh: {has_refresh}, user_id: {has_user_id}")
-                            
-                            # Don't rerun immediately - let user see debug info
-                            if st.button("Continue to App", key="continue_after_login"):
-                                st.rerun()
+                            st.info("Refresh the page to continue")
                         else:
                             st.error(f"Login failed - Error: {error}")
                             st.error(f"User ID returned: {user_id}")
