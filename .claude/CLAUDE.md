@@ -1251,3 +1251,17 @@ The Problem
 
   Try logging in and tell me what the debug messages show! This will pinpoint exactly where the session
   persistence chain is breaking.
+
+  ⏺ Now try logging in again. If token storage is failing, you should see one of these error messages instead of
+  successful login:
+
+  - "DEBUG: No session object in authentication response"
+  - "DEBUG: Failed to store tokens: [error message]"
+
+  This will tell us if:
+  1. The Supabase response doesn't contain a session object
+  2. There's an exception when trying to access session tokens
+  3. There's an issue with storing tokens in st.session_state
+
+  Try logging in and let me know what error message appears (or if you see the "Login successful! Tokens saved:
+  True" message this time).

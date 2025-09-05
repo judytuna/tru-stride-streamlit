@@ -177,9 +177,18 @@ def authenticate_user(email, password):
                 return None, False, None, "Please check your email and click the verification link before logging in."
             
             # Store session tokens for persistence (instead of session object)
-            st.session_state.access_token = response.session.access_token
-            st.session_state.refresh_token = response.session.refresh_token  
-            st.session_state.supabase_user_id = response.user.id
+            try:
+                if response.session:
+                    st.session_state.access_token = response.session.access_token
+                    st.session_state.refresh_token = response.session.refresh_token  
+                    st.session_state.supabase_user_id = response.user.id
+                    print(f"DEBUG: Tokens stored successfully - access: {bool(response.session.access_token)}")
+                else:
+                    print("DEBUG: No session in response")
+                    return None, False, None, "DEBUG: No session object in authentication response"
+            except Exception as e:
+                print(f"DEBUG: Token storage failed: {str(e)}")
+                return None, False, None, f"DEBUG: Failed to store tokens: {str(e)}"
             
             # Get profile info to check admin status
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
