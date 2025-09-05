@@ -598,30 +598,48 @@ def main():
     st.title("🐎 Tru-Stride")
 
     # Check for existing session tokens on page load  
-    if 'user_id' not in st.session_state and 'supabase_user_id' in st.session_state:
-        try:
-            supabase = init_supabase()
-            # Try to get current session after restoration
-            session = supabase.auth.get_session()
-            
-            if session and session.user:
-                # Restore user session from tokens
-                profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
-                if profile_response.data:
-                    profile = profile_response.data[0]
-                    st.session_state.user_id = session.user.id
-                    st.session_state.username = profile.get('username', session.user.email)
-                    st.session_state.is_admin = profile.get('is_admin', False)
-            else:
+    if 'user_id' not in st.session_state:
+        # Debug: Check what tokens we have
+        has_access = 'access_token' in st.session_state
+        has_refresh = 'refresh_token' in st.session_state  
+        has_user_id = 'supabase_user_id' in st.session_state
+        
+        st.sidebar.write(f"🔍 Debug tokens: access={has_access}, refresh={has_refresh}, user_id={has_user_id}")
+        
+        if has_access and has_refresh and has_user_id:
+            try:
+                supabase = init_supabase()
+                # Try to get current session after restoration
+                session = supabase.auth.get_session()
+                
+                st.sidebar.write(f"🔍 Session after init: {session is not None}")
+                st.sidebar.write(f"🔍 User from session: {session.user.id[:8] if session and session.user else 'None'}")
+                
+                if session and session.user:
+                    # Restore user session from tokens
+                    profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
+                    if profile_response.data:
+                        profile = profile_response.data[0]
+                        st.session_state.user_id = session.user.id
+                        st.session_state.username = profile.get('username', session.user.email)
+                        st.session_state.is_admin = profile.get('is_admin', False)
+                        st.sidebar.success("✅ Session restored!")
+                    else:
+                        st.sidebar.error("❌ No profile found")
+                else:
+                    st.sidebar.error("❌ Session restore failed")
+                    # Clear invalid session data
+                    for key in ['access_token', 'refresh_token', 'supabase_user_id']:
+                        if key in st.session_state:
+                            del st.session_state[key]
+            except Exception as e:
+                st.sidebar.error(f"❌ Exception: {str(e)}")
                 # Clear invalid session data
                 for key in ['access_token', 'refresh_token', 'supabase_user_id']:
                     if key in st.session_state:
                         del st.session_state[key]
-        except Exception as e:
-            # Clear invalid session data
-            for key in ['access_token', 'refresh_token', 'supabase_user_id']:
-                if key in st.session_state:
-                    del st.session_state[key]
+        else:
+            st.sidebar.write("🔍 No complete token set found")
 
     # Authentication
     if 'user_id' not in st.session_state:
@@ -648,6 +666,10 @@ def main():
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
+                            
+                            # Debug: Check if tokens were saved during login
+                            has_tokens = 'access_token' in st.session_state
+                            st.success(f"Login successful! Tokens saved: {has_tokens}")
                             st.rerun()
                         else:
                             st.error(f"Login failed - Error: {error}")

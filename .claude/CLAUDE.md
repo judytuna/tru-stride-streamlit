@@ -1230,3 +1230,24 @@ The Problem
   tokens are simple strings that Streamlit session state handles well.
 
   Let me know if session persistence works now!
+
+⏺ Perfect! Now try the full debug flow:
+
+  🔍 Debug Session Persistence
+
+  1. Login with any user - You should see "Login successful! Tokens saved: True/False"
+  2. After login - Check if the app shows you're logged in
+  3. Refresh the page - Look for the debug messages in sidebar:
+    - "🔍 Debug tokens: access=?, refresh=?, user_id=?"
+    - If tokens exist, more debug info about session restoration
+
+  This will tell us exactly where the persistence is failing:
+
+  Possible outcomes:
+  - "Tokens saved: False" → Tokens aren't being saved during login
+  - "Tokens saved: True" but "access=false" after refresh → Tokens are lost between sessions
+  - "access=true" but "Session after init: False" → Tokens exist but set_session() isn't working
+  - "Session after init: True" but "User from session: None" → Session restored but no user data
+
+  Try logging in and tell me what the debug messages show! This will pinpoint exactly where the session
+  persistence chain is breaking.
