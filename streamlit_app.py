@@ -675,9 +675,16 @@ def main():
                             st.session_state.is_admin = is_admin
                             
                             # Debug: Check if tokens were saved during login
-                            has_tokens = 'access_token' in st.session_state
-                            st.success(f"Login successful! Tokens saved: {has_tokens}")
-                            st.rerun()
+                            has_access = 'access_token' in st.session_state
+                            has_refresh = 'refresh_token' in st.session_state
+                            has_user_id = 'supabase_user_id' in st.session_state
+                            
+                            st.success(f"Login successful for {username}!")
+                            st.info(f"🔍 Tokens saved - access: {has_access}, refresh: {has_refresh}, user_id: {has_user_id}")
+                            
+                            # Don't rerun immediately - let user see debug info
+                            if st.button("Continue to App", key="continue_after_login"):
+                                st.rerun()
                         else:
                             st.error(f"Login failed - Error: {error}")
                             st.error(f"User ID returned: {user_id}")
