@@ -21,16 +21,16 @@ def init_supabase():
 
     client = create_client(url, key)
     
-    # Restore session using stored tokens
+    # Restore session for logged-in users so RLS works properly
     if 'access_token' in st.session_state and 'refresh_token' in st.session_state:
         try:
             client.auth.set_session(
-                st.session_state.access_token, 
+                st.session_state.access_token,
                 st.session_state.refresh_token
             )
         except Exception as e:
-            # Clear invalid tokens
-            for key in ['access_token', 'refresh_token', 'supabase_user_id']:
+            # Clear invalid tokens if session restore fails
+            for key in ['access_token', 'refresh_token']:
                 if key in st.session_state:
                     del st.session_state[key]
 
@@ -195,7 +195,12 @@ def authenticate_user(email, password):
                     'is_admin': is_admin
                 }).execute()
 
-            # Just return success - let Supabase handle session management
+            # Store minimal session info needed for RLS to work
+            if response.session:
+                st.session_state.access_token = response.session.access_token
+                st.session_state.refresh_token = response.session.refresh_token
+            
+            # Return success with proper user data
             return response.user.id, is_admin, username, None
         else:
             return None, False, None, "Login failed. Please check your credentials."
@@ -262,9 +267,9 @@ def save_analysis(user_id, filename, analysis_results):
     }).execute()
 
 def get_user_videos(user_id):
-    """Get videos for a specific user from Supabase"""
+    """Get videos for a specific user from Supabase using properly authenticated client"""
     supabase = init_supabase()
-
+    
     response = supabase.table('videos').select('*').eq('user_id', user_id).order('upload_date', desc=True).execute()
 
     if response.data:
@@ -706,8 +711,8 @@ def main():
         except:
             pass  # Continue even if Supabase sign out fails
         
-        # Clear session state
-        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename']:
+        # Clear session state including tokens
+        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename', 'access_token', 'refresh_token']:
             if key in st.session_state:
                 del st.session_state[key]
         st.rerun()

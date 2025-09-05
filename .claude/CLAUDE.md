@@ -1476,3 +1476,34 @@ The Problem
   bypassing RLS with the service role key.
 
   Try it out and let me know if you can see all users now!
+
+
+⏺ Perfect! ✅ Now I've fixed this properly with secure RLS-respecting authentication:
+
+  🔐 Proper Security Implementation
+
+  What I Fixed:
+
+  1. Store session tokens during login (access & refresh tokens)
+  2. Restore authentication in init_supabase() so RLS works
+  3. Revert get_user_videos() to use properly authenticated client (no service role bypass)
+  4. Clear tokens on logout
+
+  Why This Works:
+
+  - ✅ Regular users get authenticated Supabase client with their session
+  - ✅ RLS policies work because auth.uid() returns the logged-in user ID
+  - ✅ Users only see their own videos (RLS enforced properly)
+  - ✅ No service role bypass for regular operations
+  - ✅ Admin functions still use service role only where appropriate
+
+  🧪 Test Secure Video Access
+
+  Now try checking "My Videos":
+
+  - thefish should see their 1 video (and only theirs) ✅
+  - Admin should see their 2 videos (and only theirs) ✅
+  - RLS security maintained - no unauthorized access ✅
+
+  This is the proper way to handle authentication with RLS - each user gets their own authenticated session
+  without compromising security by using admin privileges.
