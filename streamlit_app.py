@@ -10,10 +10,9 @@ import re
 from supabase import create_client, Client
 import extra_streamlit_components as stx
 
-# Cookie manager singleton to avoid key conflicts
-@st.cache_resource
+# Cookie manager with unique key to avoid conflicts
 def get_cookie_manager():
-    return stx.CookieManager()
+    return stx.CookieManager(key="sb_cookie_manager")
 
 # Initialize Supabase client (removed cache to fix cross-browser session sharing)
 def init_supabase():
