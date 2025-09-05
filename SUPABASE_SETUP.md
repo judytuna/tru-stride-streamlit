@@ -65,6 +65,18 @@ CREATE TRIGGER on_auth_user_created
     FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 ```
 
+## 2b. Add Video Storage Support (Migration)
+
+If you already have the database set up but need to add video storage support, run this migration:
+
+```sql
+-- Add file_path column to videos table for Supabase Storage integration
+ALTER TABLE videos ADD COLUMN file_path TEXT;
+
+-- Optional: Add index for better performance
+CREATE INDEX idx_videos_file_path ON videos(file_path);
+```
+
 ## 3. Get Your Credentials
 
 1. Go to Settings → API in your Supabase dashboard
