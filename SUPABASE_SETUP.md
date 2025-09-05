@@ -118,12 +118,59 @@ After deployment:
 - **Session issues**: Try logging out and back in to refresh the session
 - **Email verification**: New users must verify their email before they can login
 
+## 7. Configure Video Storage (Required for Video Playback)
+
+### Create Storage Bucket
+
+1. **Go to Storage** in your Supabase dashboard
+2. **Create a new bucket** called `videos`
+3. **Set bucket to Public** (RLS will handle security)
+4. **Upload limit**: Set to 100MB or your preferred video size limit
+
+### Set Up Storage RLS Policies
+
+Go to the SQL Editor and run this SQL to configure storage security:
+
+```sql
+-- Storage policies for videos bucket
+-- Users can only upload videos to their own folder
+CREATE POLICY "Users can upload own videos" ON storage.objects FOR INSERT WITH CHECK (
+    bucket_id = 'videos' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Users can only view their own videos  
+CREATE POLICY "Users can view own videos" ON storage.objects FOR SELECT USING (
+    bucket_id = 'videos' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Users can delete their own videos
+CREATE POLICY "Users can delete own videos" ON storage.objects FOR DELETE USING (
+    bucket_id = 'videos' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Users can update their own videos (for overwrites)
+CREATE POLICY "Users can update own videos" ON storage.objects FOR UPDATE USING (
+    bucket_id = 'videos' AND
+    auth.uid()::text = (storage.foldername(name))[1]
+);
+```
+
+### Storage Configuration Summary
+- **Bucket Name**: `videos`
+- **Public Access**: Enabled (RLS controls actual access)
+- **File Organization**: `{user_id}/{filename.mp4}`
+- **Security**: Users can only access files in their own user_id folder
+
 ## Security Notes
 
 🔒 **Row Level Security (RLS)** is enabled:
 - Regular users can only access their own profiles and videos
 - Admin users see all data via service role key in admin dashboard
 - Cross-browser sessions are completely isolated
+- Storage RLS ensures users can only access videos in their own folders
 
 🔑 **Key Management**:
 - `SUPABASE_ANON_KEY`: Safe to expose, used for regular user operations
