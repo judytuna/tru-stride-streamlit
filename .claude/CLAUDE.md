@@ -1447,3 +1447,32 @@ The Problem
   built a solid, secure app with proper RLS, admin features, and working login/logout.
 
   Great call on accepting this limitation and moving forward!
+
+...noticed bug where user list (for an admin user) is restricted to only myself due to RLS
+
+⏺ Perfect! ✅ Now I've fixed the user management function to use the service role key just like the admin
+  dashboard does.
+
+  🔧 Fixed Admin User Management
+
+  The Problem:
+  - get_all_users() was using regular Supabase client (blocked by RLS)
+  - Admin could only see their own profile, not all users
+
+  The Solution:
+  - ✅ Uses service role key to bypass RLS for admin functions
+  - ✅ Shows warning if service role key not configured
+  - ✅ Matches admin dashboard pattern (same approach)
+
+  🧪 Test the Fix
+
+  Now when you're logged in as admin and click the "User Management" tab, you should see:
+
+  - All users in the system (not just yourself) ✅
+  - Video counts for each user ✅
+  - Admin promote/demote buttons working properly ✅
+
+  The admin user management should now work exactly like the admin dashboard - showing all users and data by
+  bypassing RLS with the service role key.
+
+  Try it out and let me know if you can see all users now!

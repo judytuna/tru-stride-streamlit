@@ -281,18 +281,33 @@ def get_user_videos(user_id):
         return pd.DataFrame()
 
 def get_all_users():
-    """Get all users with video counts from Supabase with error handling"""
+    """Get all users with video counts from Supabase with error handling - Admin function bypasses RLS"""
     try:
-        supabase = init_supabase()
+        # Initialize Supabase with service role key for admin queries
+        service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if service_role_key:
+            # Use service role to bypass RLS for admin user management
+            url = os.getenv("SUPABASE_URL")
+            admin_supabase = create_client(url, service_role_key)
+            
+            # Get all profiles - bypass RLS
+            profiles_response = admin_supabase.table('profiles').select('id,username,created_at,is_admin').order('created_at', desc=True).execute()
+            
+            if not profiles_response.data:
+                return pd.DataFrame()
 
-        # Get all profiles with just the fields we need
-        profiles_response = supabase.table('profiles').select('id,username,created_at,is_admin').order('created_at', desc=True).execute()
+            # Get all videos - bypass RLS
+            videos_response = admin_supabase.table('videos').select('id,user_id').execute()
+        else:
+            # Fallback to regular client (RLS-protected) with warning
+            st.warning("Service role key not configured - user management showing limited data")
+            supabase = init_supabase()
+            profiles_response = supabase.table('profiles').select('id,username,created_at,is_admin').order('created_at', desc=True).execute()
+            
+            if not profiles_response.data:
+                return pd.DataFrame()
 
-        if not profiles_response.data:
-            return pd.DataFrame()
-
-        # Get all videos at once instead of individual queries
-        videos_response = supabase.table('videos').select('id,user_id').execute()
+            videos_response = supabase.table('videos').select('id,user_id').execute()
         
         # Count videos by user_id
         video_counts = {}
