@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ### Key Dependencies
 - `streamlit` - Web application framework
 - `supabase>=1.0.0` - Database, authentication, and video storage
-- `pandas` - Data manipulation 
+- `pandas` - Data manipulation
 - `plotly` - Interactive visualizations
 - `gradio_client` - HuggingFace Gradio integration for AI analysis
 

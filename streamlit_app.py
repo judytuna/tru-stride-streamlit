@@ -14,10 +14,10 @@ def upload_video_to_storage(uploaded_file, user_id):
     """Upload video file to Supabase Storage"""
     try:
         supabase = init_supabase()
-        
+
         # Create file path: user_id/filename
         file_path = f"{user_id}/{uploaded_file.name}"
-        
+
         # Upload file to storage
         result = supabase.storage.from_('videos').upload(
             path=file_path,
@@ -27,11 +27,11 @@ def upload_video_to_storage(uploaded_file, user_id):
                 'upsert': 'true'  # String instead of boolean
             }
         )
-        
+
         if result:
             return file_path
         return None
-        
+
     except Exception as e:
         st.error(f"Failed to upload video: {str(e)}")
         return None
@@ -40,17 +40,17 @@ def get_video_url(file_path):
     """Get signed URL for video playback"""
     try:
         supabase = init_supabase()
-        
+
         # Get signed URL (expires in 1 hour)
         result = supabase.storage.from_('videos').create_signed_url(
             path=file_path,
             expires_in=3600  # 1 hour
         )
-        
+
         if result:
             return result['signedURL']
         return None
-        
+
     except Exception as e:
         st.error(f"Failed to get video URL: {str(e)}")
         return None
@@ -59,10 +59,10 @@ def delete_video_from_storage(file_path):
     """Delete video file from Supabase Storage"""
     try:
         supabase = init_supabase()
-        
+
         result = supabase.storage.from_('videos').remove([file_path])
         return bool(result)
-        
+
     except Exception as e:
         st.error(f"Failed to delete video: {str(e)}")
         return False
@@ -79,7 +79,7 @@ def init_supabase():
         st.stop()
 
     client = create_client(url, key)
-    
+
     # Restore session for logged-in users so RLS works properly
     if 'access_token' in st.session_state and 'refresh_token' in st.session_state:
         try:
@@ -147,35 +147,35 @@ def get_user_stats():
             # Use service role to bypass RLS for admin dashboard
             url = os.getenv("SUPABASE_URL")
             admin_supabase = create_client(url, service_role_key)
-            
+
             # Total users - bypass RLS
             profiles_response = admin_supabase.table('profiles').select('id,username,is_admin').execute()
             total_users = len(profiles_response.data) if profiles_response.data else 0
-            
-            # Total videos - bypass RLS  
+
+            # Total videos - bypass RLS
             videos_response = admin_supabase.table('videos').select('id,user_id,upload_date').execute()
             total_videos = len(videos_response.data) if videos_response.data else 0
         else:
             # Fallback to regular client (RLS-protected)
             st.warning("Service role key not configured - admin dashboard showing limited data")
             supabase = init_supabase()
-            
+
             profiles_response = supabase.table('profiles').select('id,username,is_admin').execute()
             total_users = len(profiles_response.data) if profiles_response.data else 0
-            
+
             videos_response = supabase.table('videos').select('id,user_id,upload_date').execute()
             total_videos = len(videos_response.data) if videos_response.data else 0
-        
+
         # Videos per user - optimize by using the data we already have
         videos_per_user_data = []
         video_counts = {}
-        
+
         # Count videos by user_id
         if videos_response.data:
             for video in videos_response.data:
                 user_id = video['user_id']
                 video_counts[user_id] = video_counts.get(user_id, 0) + 1
-        
+
         # Match with profiles
         if profiles_response.data:
             for profile in profiles_response.data:
@@ -185,15 +185,15 @@ def get_user_stats():
                     'video_count': video_count,
                     'is_admin': profile['is_admin']
                 })
-        
+
         videos_per_user = pd.DataFrame(videos_per_user_data) if videos_per_user_data else pd.DataFrame()
-        
+
         # Upload trends (last 30 days)
         upload_trends_data = []
         if videos_response.data:
             from collections import defaultdict
             date_counts = defaultdict(int)
-            
+
             # Debug: Let's see what we're getting
             for video in videos_response.data:
                 upload_date = video.get('upload_date')
@@ -204,15 +204,15 @@ def get_user_stats():
                     else:
                         date_str = str(upload_date)[:10]
                     date_counts[date_str] += 1
-            
+
             # Create the trends data
             upload_trends_data = [{'date': date, 'uploads': count}
                                  for date, count in sorted(date_counts.items(), reverse=True)[:30]]
-        
+
         upload_trends = pd.DataFrame(upload_trends_data)
-        
+
         return total_users, total_videos, videos_per_user, upload_trends
-        
+
     except Exception as e:
         st.error(f"Error loading dashboard stats: {str(e)}")
         # Return empty data if there's an error
@@ -235,7 +235,7 @@ def authenticate_user(email, password):
             # Check if email is verified
             if not response.user.email_confirmed_at:
                 return None, False, None, "Please check your email and click the verification link before logging in."
-            
+
             # Get profile info to check admin status first
             profile_response = supabase.table('profiles').select('*').eq('id', response.user.id).execute()
 
@@ -258,12 +258,12 @@ def authenticate_user(email, password):
             if response.session:
                 st.session_state.access_token = response.session.access_token
                 st.session_state.refresh_token = response.session.refresh_token
-            
+
             # Return success with proper user data
             return response.user.id, is_admin, username, None
         else:
             return None, False, None, "Login failed. Please check your credentials."
-            
+
     except Exception as e:
         error_msg = str(e).lower()
         print(f"Auth error: {e}")
@@ -324,7 +324,7 @@ def save_analysis(user_id, filename, analysis_results, file_path=None):
         'filename': filename,
         'analysis_results': analysis_results
     }
-    
+
     # Add file path if video was uploaded to storage
     if file_path:
         data['file_path'] = file_path
@@ -334,7 +334,7 @@ def save_analysis(user_id, filename, analysis_results, file_path=None):
 def get_user_videos(user_id):
     """Get videos for a specific user from Supabase using properly authenticated client"""
     supabase = init_supabase()
-    
+
     response = supabase.table('videos').select('*').eq('user_id', user_id).order('upload_date', desc=True).execute()
 
     if response.data:
@@ -360,10 +360,10 @@ def get_all_users():
             # Use service role to bypass RLS for admin user management
             url = os.getenv("SUPABASE_URL")
             admin_supabase = create_client(url, service_role_key)
-            
+
             # Get all profiles - bypass RLS
             profiles_response = admin_supabase.table('profiles').select('id,username,created_at,is_admin').order('created_at', desc=True).execute()
-            
+
             if not profiles_response.data:
                 return pd.DataFrame()
 
@@ -374,12 +374,12 @@ def get_all_users():
             st.warning("Service role key not configured - user management showing limited data")
             supabase = init_supabase()
             profiles_response = supabase.table('profiles').select('id,username,created_at,is_admin').order('created_at', desc=True).execute()
-            
+
             if not profiles_response.data:
                 return pd.DataFrame()
 
             videos_response = supabase.table('videos').select('id,user_id').execute()
-        
+
         # Count videos by user_id
         video_counts = {}
         if videos_response.data:
@@ -391,7 +391,7 @@ def get_all_users():
         users_data = []
         for profile in profiles_response.data:
             video_count = video_counts.get(profile['id'], 0)
-            
+
             users_data.append({
                 'id': profile['id'],
                 'username': profile['username'],
@@ -402,7 +402,7 @@ def get_all_users():
             })
 
         return pd.DataFrame(users_data)
-        
+
     except Exception as e:
         st.error(f"Error loading users: {str(e)}")
         return pd.DataFrame()
@@ -681,7 +681,7 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
-    # Note: Session persistence across page refreshes is not supported due to 
+    # Note: Session persistence across page refreshes is not supported due to
     # Streamlit's session state limitations. Users need to login after each refresh.
 
     # Authentication
@@ -693,7 +693,7 @@ def main():
 
         if auth_mode == "Login":
             st.sidebar.subheader("Login")
-            
+
             # Use form to ensure proper state management
             with st.sidebar.form("login_form"):
                 email = st.text_input("Email", key="login_email")
@@ -704,12 +704,12 @@ def main():
                     if email and password:
                         with st.spinner("Logging in..."):
                             user_id, is_admin, username, error = authenticate_user(email, password)
-                        
+
                         if user_id:
                             st.session_state.user_id = user_id
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
-                            
+
                             st.rerun()
                         else:
                             st.error(f"Login failed - Error: {error}")
@@ -776,7 +776,7 @@ def main():
             supabase.auth.sign_out()
         except:
             pass  # Continue even if Supabase sign out fails
-        
+
         # Clear session state including tokens
         for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename', 'access_token', 'refresh_token']:
             if key in st.session_state:
@@ -832,23 +832,23 @@ def main():
                                 x='date', y='uploads',
                                 title="Daily Upload Trends",
                                 markers=True)  # Add markers to show data points
-                    
+
                     # Force integer-only y-axis ticks
                     fig.update_yaxes(dtick=1)
-                    
+
                     # Ensure proper date formatting and spacing
                     fig.update_xaxes(
                         tickmode='linear',
                         dtick="D1"  # Show every day
                     )
-                    
+
                     # Make sure single points are visible
                     fig.update_traces(
                         mode='lines+markers',
                         marker=dict(size=8),
                         line=dict(width=3)
                     )
-                    
+
                     st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("No upload trend data yet")
@@ -945,16 +945,16 @@ def main():
                         # Upload video to Supabase Storage
                         with st.spinner("Uploading video..."):
                             file_path = upload_video_to_storage(uploaded_file, st.session_state.user_id)
-                        
+
                         # Save to database with video file path
                         save_analysis(st.session_state.user_id,
                                     uploaded_file.name,
                                     str(results),
                                     file_path)
-                        
+
                         # Store results in session state so they persist
                         st.session_state.analysis_results = results
-                        
+
                         if file_path:
                             st.success("✅ Video uploaded and analysis saved!")
                         else:
@@ -964,7 +964,7 @@ def main():
         # Display results if they exist in session state
         if 'analysis_results' in st.session_state:
             results = st.session_state.analysis_results
-            
+
             # Display results
             st.success("✅ Analysis complete!")
 
@@ -1053,7 +1053,7 @@ def main():
 
             for idx, video in user_videos.iterrows():
                 with st.expander(f"📹 {video['filename']} - {video['upload_date'][:16]}"):
-                    
+
                     # Video playback section
                     if video.get('file_path'):
                         try:

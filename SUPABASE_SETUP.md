@@ -124,7 +124,7 @@ After deployment:
 ## Troubleshooting
 
 - **Missing tables**: Make sure you ran the SQL setup in step 2
-- **Auth errors**: Check that your `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correct  
+- **Auth errors**: Check that your `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correct
 - **Admin dashboard empty**: Ensure `SUPABASE_SERVICE_ROLE_KEY` is set correctly
 - **RLS blocking access**: Users can only see their own data - this is normal behavior
 - **Session issues**: Try logging out and back in to refresh the session
@@ -151,7 +151,7 @@ CREATE POLICY "Users can upload own videos" ON storage.objects FOR INSERT WITH C
     auth.uid()::text = (storage.foldername(name))[1]
 );
 
--- Users can only view their own videos  
+-- Users can only view their own videos
 CREATE POLICY "Users can view own videos" ON storage.objects FOR SELECT USING (
     bucket_id = 'videos' AND
     auth.uid()::text = (storage.foldername(name))[1]

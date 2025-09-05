@@ -11,7 +11,7 @@ Tru-Stride is a comprehensive web application that uses artificial intelligence 
 ### 🔍 AI-Powered Gait Analysis
 - **Video Upload & Processing**: Support for MP4, AVI, MOV, and MKV video formats
 - **Real-time Analysis**: Powered by HuggingFace Gradio integration
-- **Comprehensive Metrics**: 
+- **Comprehensive Metrics**:
   - Stride classification (Normal/Abnormal)
   - Confidence scoring
   - Stride variability measurement
@@ -99,7 +99,7 @@ The application uses Supabase PostgreSQL with:
 - **Automatic profile creation**: User profiles created on signup via database triggers
 
 ### Streamlit Cloud
-Active at https://tru-stride.streamlit.app/ 
+Active at https://tru-stride.streamlit.app/
 
 ## 📋 Usage
 
@@ -183,7 +183,7 @@ supabase>=1.0.0    # Database, authentication, and video storage
 
 ### Professional Branding
 - Custom logo integration (Tru-Stride logo)
-- Themed color scheme (gold accents, neutral background)  
+- Themed color scheme (gold accents, neutral background)
 - Favicon support
 - Open Graph meta tags for social media previews
 
@@ -203,7 +203,7 @@ supabase>=1.0.0    # Database, authentication, and video storage
 ## 📈 Roadmap
 
 - [ ] Advanced filtering and search capabilities
-- [ ] Export analysis reports (PDF/CSV) 
+- [ ] Export analysis reports (PDF/CSV)
 - [ ] Video comparison features
 - [ ] Mobile application support
 - [ ] Integration with additional AI models
