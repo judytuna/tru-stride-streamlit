@@ -1339,3 +1339,27 @@ The Problem
 
   The cookie-based approach should solve the session persistence issue completely! Push the changes and test it
   out.
+
+  ...cookie write error
+
+  ⏺ Perfect! 🔧 Now I've fixed the cookie manager key conflict by using a singleton pattern with
+  @st.cache_resource.
+
+  ✅ Cookie Manager Fix
+
+  Problem: Multiple CookieManager() instances were creating duplicate keysSolution: Single cached instance via
+  get_cookie_manager()
+
+  🧪 Test the Fixed Cookie Authentication
+
+  Now try logging in again. You should see:
+
+  1. No more key conflict errors ✅
+  2. "Login successful for [username]!"
+  3. "🔍 Tokens saved - access: True, refresh: True, user_id: True"
+  4. After refresh: "✅ Session restored from cookies!"
+
+  The singleton cookie manager should eliminate the duplicate key error and allow proper token storage in
+  cookies.
+
+  Try logging in and let me know if you still get any errors or if the cookie-based session persistence works!

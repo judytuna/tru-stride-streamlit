@@ -10,6 +10,11 @@ import re
 from supabase import create_client, Client
 import extra_streamlit_components as stx
 
+# Cookie manager singleton to avoid key conflicts
+@st.cache_resource
+def get_cookie_manager():
+    return stx.CookieManager()
+
 # Initialize Supabase client (removed cache to fix cross-browser session sharing)
 def init_supabase():
     url = os.getenv("SUPABASE_URL")
@@ -199,7 +204,7 @@ def authenticate_user(email, password):
             try:
                 if response.session:
                     # Get cookie manager
-                    cookie_manager = stx.CookieManager()
+                    cookie_manager = get_cookie_manager()
                     
                     # Store tokens in cookies (expires in 7 days)
                     cookie_manager.set('sb_access_token', response.session.access_token, expires_at=datetime.now() + pd.Timedelta(days=7))
@@ -618,7 +623,7 @@ def main():
     # Check for existing session - first from cookies, then from session state
     if 'user_id' not in st.session_state:
         try:
-            cookie_manager = stx.CookieManager()
+            cookie_manager = get_cookie_manager()
             
             # Try to get tokens from cookies first
             cookie_access = cookie_manager.get('sb_access_token')
@@ -770,7 +775,7 @@ def main():
         
         # Clear cookies as well
         try:
-            cookie_manager = stx.CookieManager()
+            cookie_manager = get_cookie_manager()
             cookie_manager.delete('sb_access_token')
             cookie_manager.delete('sb_refresh_token')  
             cookie_manager.delete('sb_user_id')
