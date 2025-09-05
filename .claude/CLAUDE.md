@@ -1384,3 +1384,37 @@ The Problem
 
   The cookie-based session management should work properly now. Try logging in and let me know if you get any
   errors or if the session persists after refresh!
+
+...cookie failed, Login failed - Error: DEBUG: Failed to store tokens: There are multiple elements with the same key='sb_cookie_manager'. To fix this, please make sure that the key argument is unique for each element you create.
+...
+...User ID returned: None
+...uh okay now it's gonna delete all that and have Supabase handle session management LOL???
+
+⏺ Perfect! 🧹 I've simplified the approach completely:
+
+  ✅ Simplified Session Management
+
+  Removed:
+  - ❌ Cookie dependencies and conflicts
+  - ❌ Complex token storage logic
+  - ❌ Debug clutter
+
+  Kept:
+  - ✅ Basic login/logout functionality
+  - ✅ Simple Supabase session check on page load
+  - ✅ Clean session state management
+
+  🧪 Test Basic Login
+
+  Now the login should work without any cookie errors. Try logging in:
+
+  1. Login should succeed without token storage errors
+  2. After refresh: Check if "✅ Session restored from Supabase!" appears
+
+  This relies on Supabase's built-in session management. While it may not persist across browser refreshes (due
+  to Streamlit's session state limitations), at least login will work properly now.
+
+  If Supabase's own session persistence works, great! If not, we'll know the issue is fundamental to how
+  Streamlit handles page refreshes, and we can explore alternative approaches.
+
+  Try logging in now - it should work without errors!

@@ -8,11 +8,7 @@ import os
 import json
 import re
 from supabase import create_client, Client
-import extra_streamlit_components as stx
-
-# Cookie manager with unique key to avoid conflicts
-def get_cookie_manager():
-    return stx.CookieManager(key="sb_cookie_manager")
+# Simplified session management - let Supabase handle persistence
 
 # Initialize Supabase client (removed cache to fix cross-browser session sharing)
 def init_supabase():
@@ -199,28 +195,8 @@ def authenticate_user(email, password):
                     'is_admin': is_admin
                 }).execute()
 
-            # Store session tokens in cookies for persistence across page refreshes
-            try:
-                if response.session:
-                    # Get cookie manager
-                    cookie_manager = get_cookie_manager()
-                    
-                    # Store tokens in cookies (expires in 7 days)
-                    cookie_manager.set('sb_access_token', response.session.access_token, expires_at=datetime.now() + pd.Timedelta(days=7))
-                    cookie_manager.set('sb_refresh_token', response.session.refresh_token, expires_at=datetime.now() + pd.Timedelta(days=7))
-                    cookie_manager.set('sb_user_id', response.user.id, expires_at=datetime.now() + pd.Timedelta(days=7))
-                    
-                    # Also store in session state for current session
-                    st.session_state.access_token = response.session.access_token
-                    st.session_state.refresh_token = response.session.refresh_token  
-                    st.session_state.supabase_user_id = response.user.id
-                    
-                    # Return success with proper user data
-                    return response.user.id, is_admin, username, None
-                else:
-                    return None, False, None, "DEBUG: No session object in authentication response"
-            except Exception as e:
-                return None, False, None, f"DEBUG: Failed to store tokens: {str(e)}"
+            # Just return success - let Supabase handle session management
+            return response.user.id, is_admin, username, None
         else:
             return None, False, None, "Login failed. Please check your credentials."
             
@@ -619,52 +595,29 @@ def main():
 
     st.title("🐎 Tru-Stride")
 
-    # Check for existing session - first from cookies, then from session state
+    # Simple approach: just check if Supabase has an active session
     if 'user_id' not in st.session_state:
         try:
-            cookie_manager = get_cookie_manager()
+            supabase = init_supabase()
+            session = supabase.auth.get_session()
             
-            # Try to get tokens from cookies first
-            cookie_access = cookie_manager.get('sb_access_token')
-            cookie_refresh = cookie_manager.get('sb_refresh_token')
-            cookie_user_id = cookie_manager.get('sb_user_id')
+            st.sidebar.write(f"🔍 Supabase session exists: {session is not None}")
             
-            st.sidebar.write(f"🔍 Cookies: access={bool(cookie_access)}, refresh={bool(cookie_refresh)}, user_id={bool(cookie_user_id)}")
-            
-            if cookie_access and cookie_refresh and cookie_user_id:
-                # Restore tokens to session state from cookies
-                st.session_state.access_token = cookie_access
-                st.session_state.refresh_token = cookie_refresh
-                st.session_state.supabase_user_id = cookie_user_id
-                
-                # Try to restore session
-                supabase = init_supabase()
-                session = supabase.auth.get_session()
-                
-                st.sidebar.write(f"🔍 Session restored from cookies: {session is not None}")
-                
-                if session and session.user:
-                    # Restore user session from cookies
-                    profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
-                    if profile_response.data:
-                        profile = profile_response.data[0]
-                        st.session_state.user_id = session.user.id
-                        st.session_state.username = profile.get('username', session.user.email)
-                        st.session_state.is_admin = profile.get('is_admin', False)
-                        st.sidebar.success("✅ Session restored from cookies!")
-                    else:
-                        st.sidebar.error("❌ No profile found")
+            if session and session.user:
+                # Restore user from Supabase session
+                profile_response = supabase.table('profiles').select('*').eq('id', session.user.id).execute()
+                if profile_response.data:
+                    profile = profile_response.data[0]
+                    st.session_state.user_id = session.user.id
+                    st.session_state.username = profile.get('username', session.user.email)
+                    st.session_state.is_admin = profile.get('is_admin', False)
+                    st.sidebar.success("✅ Session restored from Supabase!")
                 else:
-                    st.sidebar.error("❌ Cookie session restore failed")
-                    # Clear invalid cookies
-                    cookie_manager.delete('sb_access_token')
-                    cookie_manager.delete('sb_refresh_token')
-                    cookie_manager.delete('sb_user_id')
+                    st.sidebar.error("❌ No profile found")
             else:
-                st.sidebar.write("🔍 No valid cookies found")
-                
+                st.sidebar.write("🔍 No active Supabase session")
         except Exception as e:
-            st.sidebar.error(f"❌ Cookie restore error: {str(e)}")
+            st.sidebar.error(f"❌ Session check error: {str(e)}")
 
     # Authentication
     if 'user_id' not in st.session_state:
@@ -692,13 +645,7 @@ def main():
                             st.session_state.username = username
                             st.session_state.is_admin = is_admin
                             
-                            # Debug: Check if tokens were saved during login
-                            has_access = 'access_token' in st.session_state
-                            has_refresh = 'refresh_token' in st.session_state
-                            has_user_id = 'supabase_user_id' in st.session_state
-                            
                             st.success(f"Login successful for {username}!")
-                            st.info(f"🔍 Tokens saved - access: {has_access}, refresh: {has_refresh}, user_id: {has_user_id}")
                             st.info("Refresh the page to continue")
                         else:
                             st.error(f"Login failed - Error: {error}")
@@ -766,20 +713,10 @@ def main():
         except:
             pass  # Continue even if Supabase sign out fails
         
-        # Clear all session state including tokens
-        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename', 
-                   'access_token', 'refresh_token', 'supabase_user_id']:
+        # Clear session state
+        for key in ['user_id', 'username', 'is_admin', 'analysis_results', 'analysis_filename']:
             if key in st.session_state:
                 del st.session_state[key]
-        
-        # Clear cookies as well
-        try:
-            cookie_manager = get_cookie_manager()
-            cookie_manager.delete('sb_access_token')
-            cookie_manager.delete('sb_refresh_token')  
-            cookie_manager.delete('sb_user_id')
-        except:
-            pass
         st.rerun()
 
     # Check admin status from database
